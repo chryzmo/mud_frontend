@@ -1,47 +1,138 @@
 body {
   background-color: skyblue;
+  margin: 0;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 #container {
-    display: flex; 
-    flex-direction: column; /* Stack the divs vertically */
-    overflow: hidden;
-    height: 100%;
-    z-index: 100;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
 #header {
-    height: 30px;
-  }
-  
+  height: 30px;
+  flex-shrink: 0;
+}
+
 #chatdiv {
-    overflow: hidden;
-    border: 1px solid black;
-    border-radius: 10px;
-    height: 90vh;
-  }
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid black;
+  border-radius: 10px;
+  min-height: 0;
+}
 
 #chatbox {
-    overflow-y: scroll;
-    padding: 5px;
-    height: 99%;
-    background: ivory;
-  }
-  
+  overflow-y: scroll;
+  padding: 5px;
+  height: 100%;
+  background: ivory;
+  box-sizing: border-box;
+}
+
+/* Bottom bar: nav buttons stacked above the input */
+#bottombar {
+  flex-shrink: 0;
+  padding: 6px 8px;
+}
+
+/* Top row of the bottom bar: nav buttons on the left, stats on the right */
+#bottombar-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+/* Nav buttons */
+#navdiv {
+  flex-shrink: 0;
+}
+
+.navrow {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.navbutton {
+  width: 40px;
+  height: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 3px 3px rgba(0,0,0,0.4);
+}
+
+.navbutton-inactive {
+  opacity: 0.3;
+  cursor: default;
+  box-shadow: none;
+}
+
+.navbutton:not(.navbutton-inactive):hover {
+  background-color: #b8bbc2;
+}
+
+/* Stats bar */
+#statsbar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+
+.stat-row {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.stat-label {
+  width: 30px;
+  font-weight: bold;
+  color: #444;
+}
+
+.stat-value {
+  min-width: 60px;
+}
+
+.hp-value { color: #c0392b; }
+.mp-value { color: #2980b9; }
+
+.stat-boosted {
+  font-weight: bold;
+  color: #d4ac0d;
+}
+
+/* Input bar */
 #inputdiv {
-    width: 100%;
-    position: fixed;
-    bottom: 10px;
-  }
+  width: 100%;
+}
+
+#inputform {
+  display: flex;
+  gap: 6px;
+}
 
 #messageBox {
-    width: 50%;
-    margin-right: 10px;
-  }
+  flex: 1;
+}
 
- .npcNameSpan {
-    color: red;
-  }
+/* Coloured name spans */
+.npcNameSpan {
+  color: red;
+}
 
 .playerNameSpan {
   color: blue;
@@ -51,38 +142,147 @@ body {
   color: green;
 }
 
+/* Inventory modal */
 .inventorymodal {
-    background-color: #eee;
-    position: absolute; 
-    border: 1px solid #555;
-    left:0;
-    right:0;
-    margin-left: auto;
-    margin-right: auto;
-    height: 25%;
-    top: 15%; /* push down by 50% of the height of the container */
-    width: 25%;
-    margin-top: -25px; /* bring it back up by half of it's height */
-  }
+  background-color: #eee;
+  position: absolute;
+  border: 1px solid #555;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  height: 25%;
+  top: 15%;
+  width: 25%;
+}
 
 .inventorymodaltext:hover {
-    font-weight: bold;
-  }
+  font-weight: bold;
+}
 
 .chatmessageclickable:hover {
-    font-weight: bold;
-  }
-  
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* ── Login / Register modal ─────────────────────────────────────────────── */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+#login-card {
+  background: #f5f0e8;
+  border: 2px solid #555;
+  border-radius: 8px;
+  padding: 32px 36px;
+  width: 340px;
+  box-shadow: 8px 8px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#login-title {
+  margin: 0;
+  font-size: 1.3rem;
+  text-align: center;
+  color: #222;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login-field label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #444;
+}
+
+.login-field input {
+  padding: 6px 8px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.login-field input:focus {
+  outline: 2px solid #4a7aba;
+  border-color: #4a7aba;
+}
+
+.login-error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  background: #fdecea;
+  border: 1px solid #e8b4b0;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+#login-submit-btn {
+  width: 100%;
+  padding: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  background: #4a7aba;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 3px 3px rgba(0, 0, 0, 0.4);
+}
+
+#login-submit-btn:hover {
+  background: #3a6aa8;
+  font-weight: bold;
+}
+
+#login-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.login-link-btn {
+  background: none;
+  border: none;
+  color: #4a7aba;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+.login-link-btn:hover {
+  color: #3a6aa8;
+  background: none;
+  font-weight: normal;
+}
+
 input, button {
-    box-shadow: 5px 5px rgba(0,0,0,0.5);
-    font-weight: normal;
-  }
-  
+  box-shadow: 5px 5px rgba(0,0,0,0.5);
+  font-weight: normal;
+}
+
 input:active, button:active {
-    box-shadow: 3px 3px rgba(0,0,0,0.5);
-  }
-  
+  box-shadow: 3px 3px rgba(0,0,0,0.5);
+}
+
 button:hover {
-    background-color:#b8bbc2;
-    font-weight: bold;
-  }
+  background-color: #b8bbc2;
+  font-weight: bold;
+}
