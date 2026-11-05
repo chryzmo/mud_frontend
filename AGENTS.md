@@ -28,13 +28,22 @@ npm run typecheck
 scripts/test.sh    # type check + tests + production build
 ```
 
-## Tests: run them before you finish
+## Tests and commits (required)
 
-- `scripts/test.sh` runs every check for this repo. Run it before finishing any change and fix
-  failures; don't leave them for the next person. Add or update tests along with behavior changes.
+- **New features ship with tests.** Every new feature or behavior change includes tests that cover
+  it, in the same PR. A bug fix includes a test that fails without the fix. If something can't
+  reasonably be tested automatically, say why in the PR description.
+- **The local suite must pass before you open or update a PR.** Run `scripts/test.sh` and make
+  sure it passes, then report it in the PR's testing section. Don't open a PR with failing or
+  skipped checks; if a failure isn't caused by your change, raise it with the user first.
+- **Commit through the pre-commit hook.** Run `scripts/install-git-hooks.sh` once per clone. The
+  hook (`.githooks/pre-commit`) blocks files that usually hold secrets, secrets in the staged
+  changes, merge-conflict markers and files over 1 MB, then runs `scripts/test.sh` (skipped if
+  that exact tree already passed). Don't use `git commit --no-verify` unless the user asks. If the
+  secret scan flags something safe, mark that line with a `pre-commit: allow-secret` comment.
 - In Claude Code, `.claude/settings.json` adds a Stop hook (`scripts/agent-stop-hook.sh`) that runs
   `scripts/test.sh` when a turn changed the repo and sends failures back to you. Other agents:
-  run it yourself. The hook skips turns that didn't change the working tree.
+  run it yourself before finishing.
 
 ## Protocol, as it stands
 
