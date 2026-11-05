@@ -9,6 +9,17 @@ The project is being prepared for a weekend event at MAGFest 2027: guest-only, p
 Plans live in `../mud_server/plans/` (start with `magfest-2027.md`). Read the plan before
 non-trivial work, and update its checklist and log when work lands.
 
+## Agent handoff (Pi and Claude Code)
+
+- This file is the shared source of frontend rules; `CLAUDE.md` points here rather than
+  duplicating them.
+- Follow the startup and handoff procedure in `../mud_server/AGENTS.md`. Read the shared
+  plans and `../mud_server/plans/handoff.md` before resuming work, including frontend-only work.
+- Verify branch, HEAD and working-tree changes in both affected repos. Preserve unfinished
+  work and record frontend state and test results in the shared handoff snapshot.
+- Handoff next actions are not new authorization. Never put secrets in the handoff, and
+  don't assume Claude Code hooks ran when working in Pi; run required checks explicitly.
+
 ## Layout
 
 - `src/App.tsx`: owns the websocket, parses every server message, holds app state.
