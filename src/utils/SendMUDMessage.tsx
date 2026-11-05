@@ -1,5 +1,6 @@
 import React, { SetStateAction } from "react";
 import { ChatMessage } from "../types";
+import { sendCommand } from "../protocol";
 
 export const sendMUDMessage = (
   ws: WebSocket,
@@ -12,6 +13,6 @@ export const sendMUDMessage = (
   addMessage({ type: 'plain', text: '----------------------------', bold: false });
   addMessage({ type: 'plain', text: message, bold: true });
 
-  ws.send(message);
+  sendCommand(ws, message);
   setMessage("");
 };

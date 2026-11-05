@@ -1,4 +1,5 @@
 import { FC, FormEvent, ReactElement, useState } from "react";
+import { sendLogin, sendRegister } from "../protocol";
 
 interface Props {
   ws: WebSocket;
@@ -44,9 +45,9 @@ const LoginModal: FC<Props> = ({ ws, error, onErrorClear }): ReactElement => {
         setLocalError('Passwords do not match.');
         return;
       }
-      ws.send(`/REGISTER ${username.trim()} ${password}`);
+      sendRegister(ws, username.trim(), password);
     } else {
-      ws.send(`/LOGIN ${username.trim()} ${password}`);
+      sendLogin(ws, username.trim(), password);
     }
   };
 
