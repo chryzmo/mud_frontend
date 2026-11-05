@@ -8,9 +8,9 @@ import LoginModal from './components/LoginModal';
 import * as MUDCONST from "./utils/constants";
 import { InventoryModal } from './components/InventoryModal';
 import { ChatMessage } from './types';
-import { parseServerMessage, sendCommand, textToChat } from './protocol';
+import { SUBPROTOCOL, eventToChat, parseServerMessage, sendCommand, textToChat } from './protocol';
 
-const websocket = new WebSocket(MUDCONST.wsUri);
+const websocket = new WebSocket(MUDCONST.wsUri, SUBPROTOCOL);
 websocket.onopen = () => {};
 websocket.onclose = () => {};
 
@@ -58,6 +58,12 @@ function App() {
     switch (msg.t) {
       case 'text':
         textToChat(msg.text).forEach(addMessage);
+        break;
+      case 'say':
+      case 'arrive':
+      case 'leave':
+      case 'whisper':
+        eventToChat(msg).forEach(addMessage);
         break;
       case 'inventory':
         modalText = msg.text;

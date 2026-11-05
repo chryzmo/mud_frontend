@@ -142,6 +142,10 @@ body {
   color: green;
 }
 
+.whisperText {
+  color: magenta;
+}
+
 /* Inventory modal */
 .inventorymodal {
   background-color: #eee;
