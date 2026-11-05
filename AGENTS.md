@@ -22,7 +22,8 @@ non-trivial work, and update its checklist and log when work lands.
 
 ## Layout
 
-- `src/App.tsx`: owns the websocket, parses every server message, holds app state.
+- `src/App.tsx`: owns the websocket, routes each server message by type, holds app state.
+- `src/protocol.ts`: the wire format: parsing, outgoing frames, and how events and text become chat lines.
 - `src/components/`: `LoginModal`, `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `src/types.ts`: the `ChatMessage` union rendered by `Chatbox`.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
@@ -69,15 +70,18 @@ scripts/test.sh    # type check + tests + production build
 - User-wide copies live in `~/.pi/agent/AGENTS.md` and `~/.claude/CLAUDE.md`; this repo copy
   carries the rule to other machines. Follow the same policy in `../mud_server/AGENTS.md`.
 
-## Protocol, as it stands
+## Protocol
 
-- The client sends raw command lines (`MOVE N`, `SAY hi`, `/LOGIN name pass`).
-- The server sends plain text with ANSI colors. `App.tsx` classifies each line by its leading color
-  code (red = NPC, blue = player, green = item) and intercepts `STATUPDATE:` and `Exits:` lines.
-- Login is detected by matching server text ("Welcome back," / "Account created!").
+- The socket opens with the subprotocol `mud.v1` (the protocol version). Every frame, both ways, is a
+  flat JSON object with a type `t`; all of it lives in `src/protocol.ts`.
+- Client to server: `cmd {line}`, `login {username,password}`, `register {username,password}`.
+- Server to client: `text`, `say`, `arrive`, `leave`, `whisper`, `auth`, `stats`, `room`, `inventory`,
+  `error`. `eventToChat` words and styles the events; `text` still carries ANSI colour codes
+  (red = NPC, blue = player, green = item), styled per line by `textToChat`.
+- `App.tsx` routes by message type; nothing is detected by matching server wording any more.
 
-Any change to message wording or colors in `../mud_server` can break parsing here, and vice versa.
-Change both sides together. The plan replaces this with a typed JSON protocol.
+The server side is `../mud_server/src/internal/mudserver/protocol.go` (design in
+`../mud_server/plans/json-protocol.md`). Change both sides together.
 
 ## Conventions
 
