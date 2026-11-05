@@ -1,0 +1,29 @@
+# Tests on every PR and every push to main. After a push to main passes, deploy
+# to production with mud_server's deploy workflow, unless the repository
+# variable AUTO_DEPLOY isn't "true" (the deploy freeze switch: Settings →
+# Secrets and variables → Actions → Variables).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: scripts/test.sh
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && vars.AUTO_DEPLOY == 'true'
+    uses: chryzmo/mud_server/.github/workflows/deploy.yml@main
+    with:
+      server_ref: main
+      frontend_ref: ${{ github.sha }}
+    secrets: inherit
