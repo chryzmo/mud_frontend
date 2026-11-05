@@ -83,6 +83,35 @@ scripts/test.sh    # type check + tests + production build
 The server side is `../mud_server/src/internal/mudserver/protocol.go` (design in
 `../mud_server/plans/json-protocol.md`). Change both sides together.
 
+## What a client must do with the protocol
+
+The server's guest sessions are built; **this client does not yet implement most of what follows. The
+Phase 3 rebuild must.** The server's README has the message tables; `../mud_server/plans/guest-sessions.md`
+has the reasoning.
+
+- **Join by name.** `join {name}`. Names are 3-16 of `A-Z a-z 0-9 _ -` with a letter, unique ignoring case;
+  the server is authoritative, so show its `invalid_name` / `name_taken` message. On success the `auth`
+  reply has a one-time `token` and `recovery` code: store the token (`localStorage`, in a `try`; storage can
+  be unavailable), and show the recovery code once with a way to copy it and a prompt to save it.
+- **Count frames.** Count every frame you process except `hello`, `auth` and `error`. Never count a replayed
+  frame twice: after a resume, set the count to the reply's `base` (absent means 0), then count the
+  `replayed` frames that follow.
+- **Resume, don't re-join.** On a page load with a stored token, or after a drop, send
+  `resume {token, received}`. `auth.gap` means frames were lost or the server restarted: treat the screen
+  as stale (a fresh `room` and `stats` follow) and say so. `bad_token` means the character is gone from
+  this token: offer recovery or a new name.
+- **Reconnect politely.** On an unexpected close, reconnect with exponential backoff plus 0-5 s of random
+  jitter, immediately (with jitter) on `online` and when the page becomes visible. A `rate_limited` error
+  carries `retry_ms`: wait exactly that, with a little jitter, instead of backing off further.
+  `restarting` means the server is going down: reconnect with jitter. `at_capacity`: say so and retry.
+- **Some closes are not reconnects.** After an `idle` error, stop and show "you were away" with a tap to
+  rejoin; a client that reconnects by itself takes its slot straight back. Likewise stop on `bad_token`.
+- **Recover.** `recover {name, code}` (any case, dashes optional) returns a *new* token and a *new* recovery
+  code: replace both and show the code again. `recovery_locked` carries `retry_ms`; show the wait.
+- **Do not trust the client for secrets or limits.** Nothing in the page is authoritative: the server
+  rate-limits, validates names and decides who a token belongs to.
+- **Do not register.** `register` and `login` are for GM accounts and are going away.
+
 ## Conventions
 
 - Function components with `FC<Props>`; props interfaces defined in the component file.
