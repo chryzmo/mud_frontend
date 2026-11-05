@@ -8,6 +8,8 @@ npm run dev        # http://localhost:3000; proxies /ws to the server on 127.0.0
 npm run build      # type check + production build into dist/
 npm run preview    # serve the production build locally
 npm run typecheck
+npm test           # Vitest unit tests (npm run test:watch to watch)
+scripts/test.sh    # everything above: type check, tests, build
 ```
 
 The client connects to `/ws` on the host that served the page (`wss://` over HTTPS).
