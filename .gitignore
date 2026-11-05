@@ -22,3 +22,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Per-user agent settings (the shared ones are .claude/settings.json)
+.claude/settings.local.json
