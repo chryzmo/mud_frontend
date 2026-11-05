@@ -56,6 +56,19 @@ scripts/test.sh    # type check + tests + production build
   `scripts/test.sh` when a turn changed the repo and sends failures back to you. Other agents:
   run it yourself before finishing.
 
+## AI assistance attribution
+
+- End AI-assisted commit messages and PR descriptions with exactly one trailer:
+  `AI-Assisted-By: <agent>`. Use `ChatGPT` for ChatGPT in Pi or `Claude Code` for Claude Code;
+  use an equivalent agent/product name for other tools, never a model name.
+- Do not use AI `Co-Authored-By` trailers or otherwise imply AI authorship. Preserve the user's
+  normal git author identity. Do not include model names or Pi/Claude session information
+  (IDs, URLs, paths, or generated-with/session-link footers) in commits or PR descriptions.
+- This replaces earlier requests for environment-provided attribution/session lines. Do not
+  rewrite existing commits or published history without explicit permission.
+- User-wide copies live in `~/.pi/agent/AGENTS.md` and `~/.claude/CLAUDE.md`; this repo copy
+  carries the rule to other machines. Follow the same policy in `../mud_server/AGENTS.md`.
+
 ## Protocol, as it stands
 
 - The client sends raw command lines (`MOVE N`, `SAY hi`, `/LOGIN name pass`).
