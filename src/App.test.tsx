@@ -5,15 +5,16 @@ import { act, render, screen } from '@testing-library/react';
 class FakeSocket {
   static last: FakeSocket;
   sent: string[] = [];
+  protocols: unknown;
   onopen: (() => void) | null = null;
   onclose: (() => void) | null = null;
   onmessage: ((ev: { data: string }) => void) | null = null;
-  constructor() { FakeSocket.last = this; }
+  constructor(_url: string, protocols?: unknown) { this.protocols = protocols; FakeSocket.last = this; }
   send(data: string) { this.sent.push(data); }
 }
 
-const frame = (t: string, d?: unknown) => JSON.stringify({ v: 1, t, d });
-const deliver = (t: string, d?: unknown) => act(() => { FakeSocket.last.onmessage!({ data: frame(t, d) }); });
+const frame = (t: string, fields: Record<string, unknown> = {}) => JSON.stringify({ t, ...fields });
+const deliver = (t: string, fields: Record<string, unknown> = {}) => act(() => { FakeSocket.last.onmessage!({ data: frame(t, fields) }); });
 
 describe('App message routing', () => {
   beforeEach(async () => {
@@ -26,7 +27,7 @@ describe('App message routing', () => {
   afterEach(() => { vi.unstubAllGlobals(); });
 
   it('shows the login card and ignores the pre-login greeting text', () => {
-    deliver('text', { text: 'Welcome to the MUD!\nRegister or log in to play.\n', kind: 'plain' });
+    deliver('text', { text: 'Welcome to the MUD!\nRegister or log in to play.\n' });
     expect(screen.getByText('Welcome to the MUD', { selector: '#login-title' })).toBeInTheDocument();
     expect(document.querySelector('.login-error, #login-error')).toBeNull();
   });
@@ -41,7 +42,7 @@ describe('App message routing', () => {
     deliver('auth', { ok: true, message: 'Welcome back, ann!' });
     expect(document.getElementById('login-overlay')).toBeNull();
 
-    deliver('text', { text: "You are in 'Start Room'\n", kind: 'plain' });
+    deliver('text', { text: "You are in 'Start Room'\n" });
     expect(screen.getByText("You are in 'Start Room'")).toBeInTheDocument();
 
     deliver('stats', { hp: 12, maxhp: 20, mp: 3, maxmp: 10, atk: 5, atkbonus: 0, def: 10, defbonus: 0 });
@@ -55,6 +56,24 @@ describe('App message routing', () => {
 
     deliver('inventory', { text: 'Your inventory is empty.' });
     expect(screen.getByText(/Your inventory is empty\./)).toBeInTheDocument();
+  });
+
+  it('shows room events and whispers in the wording the client owns', () => {
+    deliver('auth', { ok: true, message: 'Welcome back, ann!' });
+    deliver('say', { who: 'bob', text: 'hello there' });
+    expect(screen.getByText(/^\s*says: "hello there"$/)).toBeInTheDocument();
+    deliver('arrive', { who: 'cy' });
+    expect(screen.getByText(/^\s*has appeared in the room\.$/)).toBeInTheDocument();
+    deliver('leave', { who: 'cy', to: 'N' });
+    expect(screen.getByText(/^\s*has left to the N\.$/)).toBeInTheDocument();
+    deliver('whisper', { who: 'bob', text: 'psst' });
+    expect(screen.getByText('bob whispers, "psst"')).toHaveClass('whisperText');
+    deliver('whisper', { who: 'bob', text: 'ok', out: true });
+    expect(screen.getByText('You whisper to bob, "ok"')).toBeInTheDocument();
+  });
+
+  it('opens the socket with the protocol subprotocol', () => {
+    expect(FakeSocket.last.protocols).toBe('mud.v1');
   });
 
   it('ignores frames that are not v1 envelopes', () => {

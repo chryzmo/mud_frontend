@@ -11,7 +11,7 @@ describe('sendMUDMessage', () => {
 
     sendMUDMessage(ws, 'LOOK', setMessage, addMessage);
 
-    expect(ws.send).toHaveBeenCalledWith('{"v":1,"t":"cmd","d":{"line":"LOOK"}}');
+    expect(ws.send).toHaveBeenCalledWith('{"t":"cmd","line":"LOOK"}');
     expect(addMessage).toHaveBeenCalledWith({ type: 'plain', text: 'LOOK', bold: true });
     expect(setMessage).toHaveBeenCalledWith('');
   });

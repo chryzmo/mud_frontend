@@ -1,15 +1,24 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseServerMessage, sendCommand, sendLogin, sendRegister, textToChat } from './protocol';
+import { SUBPROTOCOL, eventToChat, parseServerMessage, sendCommand, sendLogin, sendRegister, textToChat } from './protocol';
 
-const frame = (t: string, d?: unknown, v = 1) => JSON.stringify({ v, t, d });
+const frame = (t: string, fields: Record<string, unknown> = {}) => JSON.stringify({ t, ...fields });
 
 describe('parseServerMessage', () => {
-  it('parses text with its kind', () => {
-    expect(parseServerMessage(frame('text', { text: 'hi', kind: 'player' }))).toEqual({ t: 'text', text: 'hi', kind: 'player' });
+  it('parses text', () => {
+    expect(parseServerMessage(frame('text', { text: 'hi' }))).toEqual({ t: 'text', text: 'hi' });
   });
 
-  it('defaults a missing kind to plain', () => {
-    expect(parseServerMessage(frame('text', { text: 'hi' }))).toEqual({ t: 'text', text: 'hi', kind: 'plain' });
+  it('parses the room events', () => {
+    expect(parseServerMessage(frame('say', { who: 'bob', text: 'hi' }))).toEqual({ t: 'say', who: 'bob', text: 'hi' });
+    expect(parseServerMessage(frame('arrive', { who: 'bob' }))).toEqual({ t: 'arrive', who: 'bob', from: undefined });
+    expect(parseServerMessage(frame('arrive', { who: 'bob', from: 'N' }))).toEqual({ t: 'arrive', who: 'bob', from: 'N' });
+    expect(parseServerMessage(frame('leave', { who: 'bob' }))).toEqual({ t: 'leave', who: 'bob', to: undefined });
+    expect(parseServerMessage(frame('leave', { who: 'bob', to: 'S' }))).toEqual({ t: 'leave', who: 'bob', to: 'S' });
+  });
+
+  it('parses a received whisper and your own echo', () => {
+    expect(parseServerMessage(frame('whisper', { who: 'bob', text: 'psst' }))).toEqual({ t: 'whisper', who: 'bob', text: 'psst', out: false });
+    expect(parseServerMessage(frame('whisper', { who: 'bob', text: 'psst', out: true }))).toEqual({ t: 'whisper', who: 'bob', text: 'psst', out: true });
   });
 
   it('parses auth success and failure', () => {
@@ -32,20 +41,42 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(frame('error', { code: 'rate_limited', message: 'Slow down.' }))).toEqual({ t: 'error', code: 'rate_limited', message: 'Slow down.' });
   });
 
-  it('rejects anything that is not a v1 envelope of a known type', () => {
-    for (const raw of ['plain text', '{', '[]', 'null', '{"v":1}', frame('dance', {}), frame('text', { text: 'x' }, 2), frame('text', { text: 'x' }, 0)]) {
+  it('rejects anything that is not a JSON object of a known type', () => {
+    for (const raw of ['plain text', '{', '[]', 'null', '{"text":"x"}', '{"t":5}', frame('dance')]) {
       expect(parseServerMessage(raw)).toBeNull();
     }
+  });
+});
+
+describe('eventToChat', () => {
+  it('words a heard SAY as a clickable player line', () => {
+    expect(eventToChat({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ type: 'player', playerName: 'bob', actionText: ' says: "hi"' }]);
+  });
+
+  it('words arrivals and departures, with and without a direction', () => {
+    expect(eventToChat({ t: 'arrive', who: 'bob' })).toEqual([{ type: 'player', playerName: 'bob', actionText: ' has appeared in the room.' }]);
+    expect(eventToChat({ t: 'arrive', who: 'bob', from: 'N' })).toEqual([{ type: 'player', playerName: 'bob', actionText: ' has entered the room from the N.' }]);
+    expect(eventToChat({ t: 'leave', who: 'bob' })).toEqual([{ type: 'player', playerName: 'bob', actionText: ' has poofed away.' }]);
+    expect(eventToChat({ t: 'leave', who: 'bob', to: 'S' })).toEqual([{ type: 'player', playerName: 'bob', actionText: ' has left to the S.' }]);
+  });
+
+  it('words whispers both ways', () => {
+    expect(eventToChat({ t: 'whisper', who: 'bob', text: 'psst', out: false })).toEqual([{ type: 'whisper', text: 'bob whispers, "psst"' }]);
+    expect(eventToChat({ t: 'whisper', who: 'bob', text: 'psst', out: true })).toEqual([{ type: 'whisper', text: 'You whisper to bob, "psst"' }]);
+  });
+
+  it('has nothing to show for other message types', () => {
+    expect(eventToChat({ t: 'text', text: 'x' })).toEqual([]);
   });
 });
 
 describe('outgoing frames', () => {
   const fakeSocket = () => ({ send: vi.fn() }) as unknown as WebSocket;
 
-  it('wraps a command line', () => {
+  it('sends flat, version-free messages', () => {
     const ws = fakeSocket();
     sendCommand(ws, 'SAY "hi" \\ there');
-    expect(JSON.parse((ws.send as ReturnType<typeof vi.fn>).mock.calls[0][0])).toEqual({ v: 1, t: 'cmd', d: { line: 'SAY "hi" \\ there' } });
+    expect((ws.send as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe('{"t":"cmd","line":"SAY \\"hi\\" \\\\ there"}');
   });
 
   it('sends credentials as fields, so spaces and quotes survive', () => {
@@ -54,9 +85,13 @@ describe('outgoing frames', () => {
     sendRegister(ws, 'bob', 'p w');
     const sent = (ws.send as ReturnType<typeof vi.fn>).mock.calls.map(c => JSON.parse(c[0]));
     expect(sent).toEqual([
-      { v: 1, t: 'login', d: { username: 'ann', password: 'pass word"' } },
-      { v: 1, t: 'register', d: { username: 'bob', password: 'p w' } },
+      { t: 'login', username: 'ann', password: 'pass word"' },
+      { t: 'register', username: 'bob', password: 'p w' },
     ]);
+  });
+
+  it('names the subprotocol the server requires', () => {
+    expect(SUBPROTOCOL).toBe('mud.v1');
   });
 });
 

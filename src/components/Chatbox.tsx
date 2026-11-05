@@ -47,6 +47,8 @@ const Chatbox: FC<Props> = ({ messages, setMessage }): ReactElement => {
                   <span className="itemActionText">{msg.actionText}</span>
                 </div>
               );
+            case 'whisper':
+              return <div key={i} className="whisperText">{msg.text}</div>;
             default:
               return null;
           }
