@@ -14,3 +14,5 @@ scripts/test.sh    # everything above: type check, tests, build
 
 The client connects to `/ws` on the host that served the page (`wss://` over HTTPS).
 Set `VITE_WS_URL` (for example in `.env.local`) to connect somewhere else.
+
+Run `scripts/install-git-hooks.sh` once per clone to enable the pre-commit hook (secret scan, conflict markers, large files, tests).
