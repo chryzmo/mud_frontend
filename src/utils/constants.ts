@@ -1,4 +1,7 @@
-export const wsUri = "ws://127.0.0.1:8080/ws"
+// Same host as the page by default, so dev (Vite proxy) and production (Caddy)
+// both work without configuration.  Set VITE_WS_URL to point elsewhere.
+const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
+export const wsUri = import.meta.env.VITE_WS_URL ?? `${wsProtocol}//${window.location.host}/ws`
 
 export const MUDCOLOR = {
     ESCAPE_START : "\x1b[1;",
