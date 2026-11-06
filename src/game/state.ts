@@ -1,0 +1,71 @@
+// The game state a screen draws: the capped log, the room, stats and the inventory
+// text. A pure reducer; nothing here touches the socket or React.
+import { ServerFrame, Stats } from '../net/frames';
+import { Entry, EntryBody, frameLines } from './entries';
+
+// A long session must not grow the page without bound: the oldest lines go first.
+export const MAX_LOG = 500;
+
+export interface RoomInfo {
+  name: string;
+  exits: string[];
+}
+
+export interface GameState {
+  log: Entry[];
+  nextId: number;
+  room: RoomInfo | null;
+  stats: Stats | null;
+  // The text of the last INVENTORY reply, until the player closes it.
+  inventory: string | null;
+}
+
+export type GameAction =
+  | { type: 'frame'; frame: ServerFrame }
+  // The server let us in. A fresh character (join, recover) starts clean; a resume
+  // keeps the log, and a gap says that some of it is missing.
+  | { type: 'welcome'; resumed: boolean; gap: boolean }
+  | { type: 'echo'; line: string }
+  | { type: 'notice'; message: string }
+  | { type: 'closeInventory' };
+
+export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null });
+
+const GAP_TEXT = 'You were disconnected for a while. Some messages may have been missed.';
+
+// append adds lines, numbering them and dropping the oldest beyond MAX_LOG.
+function append(state: GameState, lines: EntryBody[]): GameState {
+  if (lines.length === 0) return state;
+  let id = state.nextId;
+  const added = lines.map((body): Entry => ({ ...body, id: id++ }));
+  const log = state.log.concat(added);
+  return { ...state, log: log.length > MAX_LOG ? log.slice(log.length - MAX_LOG) : log, nextId: id };
+}
+
+export function reduce(state: GameState, action: GameAction): GameState {
+  switch (action.type) {
+    case 'welcome': {
+      const base = action.resumed ? state : { ...initialGameState(), nextId: state.nextId };
+      return action.resumed && action.gap ? append(base, [{ kind: 'divider', text: GAP_TEXT }]) : base;
+    }
+    case 'echo':
+      return append(state, [{ kind: 'echo', text: action.line }]);
+    case 'notice':
+      return append(state, [{ kind: 'notice', text: action.message }]);
+    case 'closeInventory':
+      return state.inventory === null ? state : { ...state, inventory: null };
+    case 'frame': {
+      const f = action.frame;
+      switch (f.t) {
+        case 'stats':
+          return { ...state, stats: f.stats };
+        case 'room':
+          return { ...state, room: { name: f.name, exits: f.exits } };
+        case 'inventory':
+          return { ...state, inventory: f.text };
+        default:
+          return append(state, frameLines(f));
+      }
+    }
+  }
+}
