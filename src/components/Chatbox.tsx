@@ -1,4 +1,4 @@
-import { FC, ReactElement, useLayoutEffect, useRef, useState } from "react";
+import { FC, ReactElement, memo, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Entry } from "../game/entries";
 
 export interface Target {
@@ -14,8 +14,56 @@ interface Props {
 // Within this many pixels of the bottom counts as "reading the latest".
 const NEAR_BOTTOM_PX = 48;
 
+// How many rows have rendered; the tests use it to check that a new line does not
+// re-render the 500 that were already there.
+export const chatPerf = { rowRenders: 0 };
+
+// One log line. Memoised: entries never change once added, and `onSelect` is stable,
+// so appending a line renders one row, not the whole log.
+const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: (t: Target) => void }): ReactElement | null {
+  chatPerf.rowRenders++;
+  switch (e.kind) {
+      case 'plain':
+        return <div>{e.text}</div>;
+      case 'echo':
+        return <div style={{ fontWeight: 'bold' }}>{'> ' + e.text}</div>;
+      case 'notice':
+        return <div className="noticeText">{e.text}</div>;
+      case 'divider':
+        return <div className="dividerText">{e.text}</div>;
+      case 'spacer':
+        return <div>&nbsp;</div>;
+      case 'combat':
+        return (
+          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'npc', name: e.npcName })}>
+            <span className="npcNameSpan">{e.npcName}</span>
+            <span className="npcActionText">{e.actionText}</span>
+          </div>
+        );
+      case 'player':
+        return (
+          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'player', name: e.playerName })}>
+            <span className="playerNameSpan">{e.playerName}</span>
+            <span className="playerActionText">{e.actionText}</span>
+          </div>
+        );
+      case 'item':
+        return (
+          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'item', name: e.itemName })}>
+            <span className="itemNameSpan">{e.itemName}</span>
+            <span className="itemActionText">{e.actionText}</span>
+          </div>
+        );
+      case 'whisper':
+        return <div className="whisperText">{e.text}</div>;
+    }
+});
+
 const Chatbox: FC<Props> = ({ entries, onSelect }): ReactElement => {
   const scroller = useRef<HTMLDivElement>(null);
+  const latestSelect = useRef(onSelect);
+  latestSelect.current = onSelect;
+  const select = useCallback((t: Target) => latestSelect.current(t), []);
   const stuck = useRef(true); // follow new lines only while the player is at the bottom
   const seen = useRef(entries.length ? entries[entries.length - 1].id : 0);
   const [unread, setUnread] = useState(0);
@@ -47,44 +95,10 @@ const Chatbox: FC<Props> = ({ entries, onSelect }): ReactElement => {
 
   return (
     <div id="chatdiv">
-      <div id="chatbox" ref={scroller} onScroll={onScroll}>
-        {entries.map((e) => {
-          switch (e.kind) {
-            case 'plain':
-              return <div key={e.id}>{e.text}</div>;
-            case 'echo':
-              return <div key={e.id} style={{ fontWeight: 'bold' }}>{'> ' + e.text}</div>;
-            case 'notice':
-              return <div key={e.id} className="noticeText">{e.text}</div>;
-            case 'divider':
-              return <div key={e.id} className="dividerText">{e.text}</div>;
-            case 'spacer':
-              return <div key={e.id}>&nbsp;</div>;
-            case 'combat':
-              return (
-                <div key={e.id} className="chatmessageclickable" onClick={() => onSelect({ kind: 'npc', name: e.npcName })}>
-                  <span className="npcNameSpan">{e.npcName}</span>
-                  <span className="npcActionText">{e.actionText}</span>
-                </div>
-              );
-            case 'player':
-              return (
-                <div key={e.id} className="chatmessageclickable" onClick={() => onSelect({ kind: 'player', name: e.playerName })}>
-                  <span className="playerNameSpan">{e.playerName}</span>
-                  <span className="playerActionText">{e.actionText}</span>
-                </div>
-              );
-            case 'item':
-              return (
-                <div key={e.id} className="chatmessageclickable" onClick={() => onSelect({ kind: 'item', name: e.itemName })}>
-                  <span className="itemNameSpan">{e.itemName}</span>
-                  <span className="itemActionText">{e.actionText}</span>
-                </div>
-              );
-            case 'whisper':
-              return <div key={e.id} className="whisperText">{e.text}</div>;
-          }
-        })}
+      <div id="chatbox" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-relevant="additions" aria-label="Game log" tabIndex={0}>
+        {entries.map((e) => (
+          <Row key={e.id} entry={e} onSelect={select} />
+        ))}
       </div>
       {showJump && (
         <button type="button" className="jump" onClick={toBottom}>

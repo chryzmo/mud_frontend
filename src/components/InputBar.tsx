@@ -62,6 +62,7 @@ const InputBar: FC<Props> = ({ message, setMessage, inputRef, onSend, onFocusCha
           value={message}
           ref={inputRef}
           placeholder="What would you like to do..?"
+          aria-label="Command"
           onInput={(e: React.ChangeEvent<HTMLInputElement>) => {
             historyIndex.current = -1;
             setMessage(e.target.value);

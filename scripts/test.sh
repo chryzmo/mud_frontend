@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run every frontend check: type check, unit tests, production build.
+# Run every frontend check: type check, unit tests, production build, bundle budget.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -8,3 +8,4 @@ cd "$(dirname "$0")/.."
 npm run --silent typecheck
 npx vitest run
 npx vite build --logLevel warn
+scripts/check-bundle.sh

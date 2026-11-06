@@ -1,4 +1,5 @@
-import { FC, useEffect } from "react";
+import { FC, useEffect, useRef } from "react";
+import { useDialogFocus } from "../useDialogFocus";
 import { createPortal } from "react-dom";
 import * as MUDCONST from "../utils/constants";
 
@@ -20,21 +21,21 @@ export function itemsOf(msgText: string): { line: string; name: string }[] {
         .map((line) => ({ line, name: line.replace(/^\d+x /, '') }));
 }
 
-export const InventoryModal: FC<Props> = ({ isShown, hide, msgText, onItem }) => {
+const Sheet: FC<Omit<Props, 'isShown'>> = ({ hide, msgText, onItem }) => {
+    const sheet = useRef<HTMLDivElement>(null);
+    useDialogFocus(sheet);
     useEffect(() => {
-        if (!isShown) return;
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Enter" || e.key === "Escape") hide();
+            if (e.key === "Escape") hide();
         };
         document.addEventListener("keydown", onKeyDown);
         return () => document.removeEventListener("keydown", onKeyDown);
-    }, [isShown, hide]);
+    }, [hide]);
 
-    if (!isShown) return null;
     const items = itemsOf(msgText);
     return createPortal(
         <div className="sheet-backdrop" onClick={hide}>
-            <div className="sheet" role="dialog" aria-label="Your inventory" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet" ref={sheet} role="dialog" aria-modal="true" aria-label="Your inventory" onClick={(e) => e.stopPropagation()}>
                 <div className="sheet-title">Your inventory</div>
                 {items.length === 0 && <div className="sheet-empty">Your inventory is empty.</div>}
                 {items.map((it) => (
@@ -48,3 +49,5 @@ export const InventoryModal: FC<Props> = ({ isShown, hide, msgText, onItem }) =>
         document.body,
     );
 };
+
+export const InventoryModal: FC<Props> = ({ isShown, ...rest }) => (isShown ? <Sheet {...rest} /> : null);

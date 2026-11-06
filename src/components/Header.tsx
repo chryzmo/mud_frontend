@@ -6,7 +6,7 @@ interface Props {
 }
  
 const Header: FC<Props> = ({ title }): ReactElement => {
-  return <div id="header">{title}</div>;
+  return <header id="header"><h1>{title}</h1></header>;
 };
  
 export default Header;

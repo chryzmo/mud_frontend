@@ -56,7 +56,7 @@ describe('joining as a guest', () => {
     fireEvent.click(start);
 
     expect(screen.queryByTestId('recovery-code')).toBeNull();
-    expect(screen.getByRole('textbox', { name: '' })).toBeInTheDocument(); // the command box
+    expect(screen.getByRole('textbox', { name: 'Command' })).toBeInTheDocument(); // the command box
     expect(kv.getItem('mud.recovery')).toBeNull();
   });
 
