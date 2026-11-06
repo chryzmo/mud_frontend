@@ -19,6 +19,55 @@ jobs:
           node-version: "24"
       - run: scripts/test.sh
 
+  # End-to-end: a real browser against this build and mud_server's main, with Postgres.
+  # Runs after the fast checks pass. It does not gate the deploy yet.
+  e2e:
+    needs: test
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: mud
+          POSTGRES_PASSWORD: mud
+          POSTGRES_DB: mud_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mud -d mud_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      CI: "true"
+      E2E_WEBKIT: "1" # WebKit is the closest thing to iOS Safari that runs here
+      E2E_DATABASE_URL: postgres://mud:mud@127.0.0.1:5432/mud_test # reseeded by the run
+      MUD_SERVER_DIR: ${{ github.workspace }}/mud_server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: chryzmo/mud_server
+          ref: main
+          path: mud_server
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - run: scripts/e2e.sh
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   deploy:
     needs: test
     if: github.event_name == 'push' && vars.AUTO_DEPLOY == 'true'
