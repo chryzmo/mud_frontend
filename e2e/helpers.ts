@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test';
+import { test as base, expect, Page } from '@playwright/test';
 
 // A name no other test (or earlier run) has used. Random letters, because tests run
 // in parallel workers: a clock or a counter would repeat across them. Letters only:
@@ -40,3 +40,24 @@ export async function say(page: Page, line: string) {
   await box.fill(line);
   await box.press('Enter');
 }
+
+// A handle on this browser context's connection to the game server, through e2e/proxy.mjs.
+export interface Net {
+  cut(): Promise<void>; // drop the live connection now; the page may reconnect
+  block(): Promise<void>; // drop it and refuse new ones: an outage
+  unblock(): Promise<void>; // the network is back
+}
+
+export const test = base.extend<{ net: Net }>({
+  net: async ({ context, baseURL }, use, testInfo) => {
+    const id = 'c' + uniqueName().toLowerCase();
+    await context.addCookies([{ name: 'e2e', value: id, url: baseURL! }]); // sent with the websocket upgrade
+    const port = testInfo.config.metadata.proxyControlPort;
+    const call = async (what: string) => {
+      const res = await fetch(`http://127.0.0.1:${port}/${what}?id=${id}`, { method: 'POST' });
+      if (!res.ok) throw new Error(`proxy ${what}: ${res.status}`);
+    };
+    await use({ cut: () => call('cut'), block: () => call('block'), unblock: () => call('unblock') });
+    await call('unblock'); // leave nothing blocked behind
+  },
+});

@@ -149,6 +149,9 @@ npx playwright install chromium   # once per machine
   another. `server.mjs` refuses a database whose name does not end in `_test` or `_e2e`.
 - Select by role, label, placeholder or text (as the component tests do), not by CSS, so layout work does not break
   them. Use `uniqueName()` for guests; tests run in parallel and the database is shared.
+- `e2e/proxy.mjs` sits between the web server and the game server. Import `test` from `e2e/helpers.ts` (not from
+  `@playwright/test`) to get a `net` fixture: `net.cut()` drops this browser's connection, `net.block()` / `net.unblock()`
+  make an outage. Each browser context is tagged by a cookie, so one test never cuts another's connection.
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
 - The compass and stats hide while the input has focus (the keyboard is up); blur the input before using them.
 - Never point these at production. A live smoke test is a manual, owner-authorized step.
