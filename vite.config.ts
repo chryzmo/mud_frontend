@@ -21,7 +21,7 @@ export default defineConfig({
   },
   preview: { proxy },
   test: {
-    exclude: ['**/node_modules/**', 'e2e/**'], // Playwright runs those
+    exclude: ['**/node_modules/**', 'e2e/**', 'smoke/**'], // Playwright runs those
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
   },

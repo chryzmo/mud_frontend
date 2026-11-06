@@ -155,7 +155,8 @@ npx playwright install chromium   # once per machine
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
 - The compass and stats hide while the input has focus *and* the visible height is under 420px (keyboard up on a
   short screen); on taller screens they stay. Blur the input before using them to be safe.
-- Never point these at production. A live smoke test is a manual, owner-authorized step.
+- Never point these at production. A live smoke test is a manual, owner-authorized step: `scripts/smoke-live.sh https://<site>`
+  runs `smoke/live.spec.ts` (one guest: join, play, drop the network, reload) with `playwright.smoke.config.ts`. It is not in CI.
 
 ## Look and accessibility
 
