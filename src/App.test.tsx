@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
-import { FakeSocket, MemoryKV } from './net/testSupport';
+import { FakeSocket, MemoryKV, ThrowingKV } from './net/testSupport';
 import { createSession, Session } from './session';
 
 let sockets: FakeSocket[];
@@ -186,13 +186,24 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'DROP rusty sword' });
   });
 
-  it('gives the log the room while the keyboard is up', () => {
-    playing();
-    const box = screen.getByPlaceholderText('What would you like to do..?');
-    fireEvent.focus(box);
-    expect(document.getElementById('game')).toHaveClass('typing');
-    fireEvent.blur(box);
-    expect(document.getElementById('game')).not.toHaveClass('typing');
+  it('keeps the compass while the keyboard is up on a tall screen, and drops it on a short one', () => {
+    class Viewport extends EventTarget { height = 700; offsetTop = 0; }
+    const vv = new Viewport();
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+    try {
+      playing();
+      const game = () => document.getElementById('game')!;
+      const box = screen.getByPlaceholderText('What would you like to do..?');
+      fireEvent.focus(box);
+      expect(game()).not.toHaveClass('cramped'); // 700px is plenty with the keyboard up
+
+      act(() => { vv.height = 300; vv.dispatchEvent(new Event('resize')); }); // a short screen, or landscape
+      expect(game()).toHaveClass('cramped');
+      fireEvent.blur(box);
+      expect(game()).not.toHaveClass('cramped');
+    } finally {
+      delete (window as unknown as Record<string, unknown>).visualViewport;
+    }
   });
 
   it('shows the inventory reply', () => {
@@ -294,5 +305,47 @@ describe('copying the recovery code', () => {
     showCode();
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
     expect(await screen.findByText(/Could not copy/)).toBeInTheDocument();
+  });
+});
+
+describe('reconnect status', () => {
+  function reconnecting() {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ ...AUTH, resumed: true });
+    act(() => sock().drop());
+  }
+
+  it('counts down to the next attempt and offers to retry now', () => {
+    vi.useFakeTimers();
+    try {
+      reconnecting();
+      // The first retry comes within a second; make the next one a longer wait.
+      act(() => { vi.advanceTimersByTime(1000); });
+      act(() => sock().drop());
+      expect(screen.getByRole('status')).toHaveTextContent(/Connection lost\. Reconnecting in \d+s/);
+
+      const before = sockets.length;
+      fireEvent.click(screen.getByRole('button', { name: 'Retry now' }));
+      expect(sockets).toHaveLength(before + 1);
+      expect(screen.getByRole('status')).toHaveTextContent('Reconnecting…');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('warns when the browser cannot keep the login', () => {
+    kv = new MemoryKV();
+    sockets = [];
+    session = createSession({
+      backing: new ThrowingKV(), url: 'ws://t/ws', signals: false,
+      createSocket: () => { const s = new FakeSocket(); sockets.push(s); return s; },
+    });
+    session.store.saveSession('T', 'Alice'); // kept in memory only
+    session.conn.start();
+    render(<App session={session} />);
+    act(() => sock().open());
+    deliver({ ...AUTH, resumed: true });
+    expect(screen.getByRole('note')).toHaveTextContent(/not saving your login/);
   });
 });

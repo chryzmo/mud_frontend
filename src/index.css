@@ -143,9 +143,9 @@ html, body {
   gap: 4px;
 }
 
-/* With the keyboard up there is no room for the pad: keep the log and the input. */
-#game.typing #controls,
-#game.typing #statsbar { display: none; }
+/* With too little room (keyboard up on a short screen) keep the log and the input. */
+#game.cramped #controls,
+#game.cramped #statsbar { display: none; }
 
 /* Input */
 #inputform { display: flex; gap: 6px; }
@@ -379,3 +379,7 @@ input[type="text"] {
   cursor: default;
 }
 
+
+.statusline { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.statusline.warn { background: #fde8e8; border-bottom-color: #e3a5a5; }
+.statusline-retry { min-height: 32px; padding: 0 12px; font-size: 0.9rem; flex-shrink: 0; }

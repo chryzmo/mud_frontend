@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Keeps --app-height and --app-top equal to the part of the screen the player can
 // actually see. On iOS the on-screen keyboard shrinks the visual viewport but not
@@ -25,4 +25,19 @@ export function trackViewport(win: Window = window): () => void {
 
 export function useViewport() {
   useEffect(() => trackViewport(), []);
+}
+
+const visibleHeight = (win: Window) => win.visualViewport?.height ?? win.innerHeight;
+
+// The height of the part of the screen the player can see (it shrinks with the keyboard).
+export function useVisibleHeight(): number {
+  const [height, setHeight] = useState(() => visibleHeight(window));
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setHeight(vv.height);
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, []);
+  return height;
 }

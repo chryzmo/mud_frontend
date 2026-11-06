@@ -153,7 +153,8 @@ npx playwright install chromium   # once per machine
   `@playwright/test`) to get a `net` fixture: `net.cut()` drops this browser's connection, `net.block()` / `net.unblock()`
   make an outage. Each browser context is tagged by a cookie, so one test never cuts another's connection.
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
-- The compass and stats hide while the input has focus (the keyboard is up); blur the input before using them.
+- The compass and stats hide while the input has focus *and* the visible height is under 420px (keyboard up on a
+  short screen); on taller screens they stay. Blur the input before using them to be safe.
 - Never point these at production. A live smoke test is a manual, owner-authorized step.
 
 ## Wire transcripts
