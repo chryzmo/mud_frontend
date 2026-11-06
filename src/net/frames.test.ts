@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cmdFrame, isCounted, joinFrame, parseFrame, recoverFrame, resumeFrame } from './frames';
+import { cmdFrame, isCounted, joinFrame, loginFrame, parseFrame, recoverFrame, resumeFrame } from './frames';
 import transcripts from './testdata/transcripts.json';
 
 const f = (t: string, fields: Record<string, unknown> = {}) => JSON.stringify({ t, ...fields });
@@ -66,6 +66,10 @@ describe('outgoing frames', () => {
     expect(JSON.parse(recoverFrame('Alice', 'ABCD-EFGH'))).toEqual({ t: 'recover', name: 'Alice', code: 'ABCD-EFGH' });
     expect(JSON.parse(resumeFrame('tok', 4))).toEqual({ t: 'resume', token: 'tok', received: 4 });
     expect(JSON.parse(resumeFrame('tok', 0))).toEqual({ t: 'resume', token: 'tok', received: 0 });
+  });
+
+  it('signs staff in with a username and password', () => {
+    expect(JSON.parse(loginFrame('boss', 'a long password'))).toEqual({ t: 'login', username: 'boss', password: 'a long password' });
   });
 
   it('leaves received out when the page remembers nothing', () => {

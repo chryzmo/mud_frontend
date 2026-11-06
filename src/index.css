@@ -455,3 +455,13 @@ input[type="text"] {
     scroll-behavior: auto !important;
   }
 }
+
+/* The game master's button and panel */
+#header { display: flex; align-items: center; justify-content: space-between; gap: var(--gap); }
+.gm-open { min-height: 32px; padding: 0 12px; font-size: 0.9rem; }
+.gm-panel .gm-row { display: flex; gap: 6px; }
+.gm-panel .gm-row > * { flex: 1; min-width: 0; }
+.gm-panel .gm-label { font-size: 0.85rem; color: var(--muted); }
+.gm-panel input[type="text"] { min-height: var(--tap); font-size: 16px; }
+.gm-panel button { font-size: 0.9rem; }
+.gm-danger { border-color: var(--danger); color: var(--danger); }

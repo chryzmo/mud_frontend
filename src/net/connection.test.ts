@@ -502,3 +502,113 @@ describe('retryNow', () => {
     expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'idle' });
   });
 });
+
+describe('kicked', () => {
+  it('stops for good when a GM kicks the character, keeps the token and says what the server said', () => {
+    const h = setup();
+    const s = joinOnline(h);
+    s.deliver({ t: 'error', code: 'kicked', message: 'A GM asked you to take a break for 10 minutes.' });
+    expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'kicked', endMessage: 'A GM asked you to take a break for 10 minutes.' });
+    s.drop();
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(h.sockets).toHaveLength(1);
+    expect(h.kv.getItem('mud.token')).toBe('T1');
+  });
+
+  it('a tap during the break is refused again without a reconnect loop, and works once it is over', () => {
+    const h = setup();
+    const s = joinOnline(h);
+    s.deliver({ t: 'error', code: 'kicked', message: 'x' });
+    h.conn.resume();
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: false, code: 'kicked', message: 'Please try again in about 9 minutes.' });
+    expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'kicked', endMessage: 'Please try again in about 9 minutes.' });
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(h.sockets).toHaveLength(2);
+
+    h.conn.resume(); // the break is over
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: true, message: 'Welcome back', resumed: true, gap: true });
+    expect(h.conn.getState()).toMatchObject({ phase: 'online', endMessage: undefined });
+  });
+});
+
+describe('staff sign-in', () => {
+  const LOGIN = { t: 'login', username: 'boss', password: 'a long password' };
+  const welcome = { t: 'auth', ok: true, message: 'Welcome back, boss!', resumed: false, gap: false };
+
+  function signIn(h: H) {
+    h.conn.login('boss', 'a long password');
+    h.last().open();
+    h.last().deliver({ t: 'hello', message: 'hi' });
+    h.last().deliver(welcome);
+    return h.last();
+  }
+
+  it('signs in with the password, is staff, and stores nothing', () => {
+    const h = setup();
+    const s = signIn(h);
+    expect(h.sent(s)).toEqual([LOGIN]);
+    expect(h.conn.getState()).toMatchObject({ phase: 'online', staff: true });
+    expect(h.kv.getItem('mud.token')).toBeNull();
+    expect(JSON.stringify([...(h.kv as MemoryKV).data])).not.toContain('a long password');
+    expect(h.events.find((e) => e.type === 'welcome')).toMatchObject({ resumed: false, recovery: undefined });
+  });
+
+  it('signs in again by itself after a drop, from memory, and marks what was missed', () => {
+    const h = setup();
+    signIn(h).drop();
+    expect(h.conn.getState()).toMatchObject({ phase: 'reconnecting' });
+    vi.advanceTimersByTime(delayOf(h));
+    expect(h.conn.getState().phase).toBe('resuming');
+    h.last().open();
+    expect(h.sent(h.last())).toEqual([LOGIN]);
+    h.last().deliver(welcome);
+    expect(h.conn.getState()).toMatchObject({ phase: 'online', staff: true });
+    expect(h.events.filter((e) => e.type === 'welcome').pop()).toMatchObject({ resumed: true, gap: true });
+  });
+
+  it('keeps trying while the old session is still being cleared on the server', () => {
+    const h = setup();
+    signIn(h).drop();
+    vi.advanceTimersByTime(delayOf(h));
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: false, code: 'name_online', message: 'That user is already logged in.' });
+    expect(h.conn.getState()).toMatchObject({ phase: 'reconnecting', waitReason: 'busy' });
+    vi.advanceTimersByTime(delayOf(h));
+    h.last().open();
+    h.last().deliver(welcome);
+    expect(h.conn.getState().phase).toBe('online');
+  });
+
+  it('goes back to the form when the password stops working', () => {
+    const h = setup();
+    signIn(h).drop();
+    vi.advanceTimersByTime(delayOf(h));
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: false, code: 'bad_password', message: 'Incorrect password.' });
+    expect(h.conn.getState()).toMatchObject({ phase: 'landing', staff: false, refusal: { code: 'bad_password' } });
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(h.sockets).toHaveLength(2); // and it does not keep guessing
+  });
+
+  it('shows a refused first sign-in and forgets the password', () => {
+    const h = setup();
+    h.conn.login('boss', 'wrong password!!');
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: false, code: 'bad_password', message: 'Incorrect password.' });
+    expect(h.conn.getState()).toMatchObject({ phase: 'landing', refusal: { code: 'bad_password', message: 'Incorrect password.' } });
+    h.last().drop();
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(h.sockets).toHaveLength(1);
+  });
+
+  it('a staff sign-in does not touch a guest character stored in the browser', () => {
+    const h = setup();
+    h.kv.setItem('mud.token', 'GUESTTOKEN');
+    h.kv.setItem('mud.name', 'Alice');
+    signIn(h);
+    expect(h.kv.getItem('mud.token')).toBe('GUESTTOKEN');
+    expect(h.kv.getItem('mud.name')).toBe('Alice');
+  });
+});

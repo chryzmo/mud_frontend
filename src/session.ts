@@ -56,13 +56,18 @@ export function createSession(opts: SessionOptions = {}): Session {
   };
 }
 
+// isStaffRoute: the hidden sign-in page for the game master. Nothing links to it.
+export function isStaffRoute(loc: Pick<Location, 'pathname'> = window.location): boolean {
+  return loc.pathname.replace(/\/+$/, '') === '/staff';
+}
+
 let current: Session | null = null;
 
 // getSession is the page's one session, created and started on first use.
 export function getSession(): Session {
   if (!current) {
     current = createSession();
-    current.conn.start();
+    if (!isStaffRoute()) current.conn.start(); // the staff page never resumes a guest character
   }
   return current;
 }

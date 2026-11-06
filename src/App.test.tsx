@@ -349,3 +349,119 @@ describe('reconnect status', () => {
     expect(screen.getByRole('note')).toHaveTextContent(/not saving your login/);
   });
 });
+
+describe('the game master', () => {
+  afterEach(() => window.history.pushState({}, '', '/'));
+
+  function atStaff() {
+    window.history.pushState({}, '', '/staff');
+    mount();
+  }
+
+  function signIn() {
+    atStaff();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'boss' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a long password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: true, message: 'Welcome back, boss!', resumed: false, gap: false });
+  }
+
+  it('shows the staff sign-in at /staff, not the guest landing, and sends login', () => {
+    atStaff();
+    expect(screen.getByRole('heading', { name: 'Staff sign-in' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Pick a name')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'boss' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a long password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    act(() => sock().open());
+    expect(sock().sentFrames()).toEqual([{ t: 'login', username: 'boss', password: 'a long password' }]);
+  });
+
+  it('does not resume a guest character on the staff page', () => {
+    kv = new MemoryKV();
+    kv.setItem('mud.token', 'TOK');
+    window.history.pushState({}, '', '/staff');
+    sockets = [];
+    session = createSession({
+      backing: kv, url: 'ws://t/ws', signals: false,
+      createSocket: () => { const s = new FakeSocket(); sockets.push(s); return s; },
+    });
+    render(<App session={session} />);
+    expect(sockets).toHaveLength(0); // nothing connects until the GM signs in
+    expect(screen.getByRole('heading', { name: 'Staff sign-in' })).toBeInTheDocument();
+  });
+
+  it('shows why a sign-in was refused', () => {
+    atStaff();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'boss' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong password!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: false, code: 'bad_password', message: 'Incorrect password.' });
+    expect(screen.getByRole('alert')).toHaveTextContent('Incorrect password.');
+  });
+
+  it('gives a signed-in GM the panel, whose buttons send GM commands', () => {
+    signIn();
+    deliver({ t: 'room', name: 'Start Room', exits: [] });
+    fireEvent.click(screen.getByRole('button', { name: 'GM' }));
+    expect(screen.getByRole('dialog', { name: 'Game master' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Who is here' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM WHO' });
+    expect(screen.queryByRole('dialog')).toBeNull(); // the answer is in the log
+
+    fireEvent.click(screen.getByRole('button', { name: 'GM' }));
+    fireEvent.change(screen.getByLabelText('Announce to everyone'), { target: { value: 'The feast begins at nine!' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Announce' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM ANNOUNCE The feast begins at nine!' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'GM' }));
+    expect(screen.getByRole('button', { name: 'Mute 15 min' })).toBeDisabled(); // needs a name
+    fireEvent.change(screen.getByLabelText('Player'), { target: { value: 'bob' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Mute 15 min' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM MUTE bob 15' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'GM' })); // the name is remembered
+    expect(screen.getByLabelText('Player')).toHaveValue('bob');
+    fireEvent.click(screen.getByRole('button', { name: 'Lock joins' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM LOCK' });
+  });
+
+  it('asks twice before kicking', () => {
+    signIn();
+    fireEvent.click(screen.getByRole('button', { name: 'GM' }));
+    fireEvent.change(screen.getByLabelText('Player'), { target: { value: 'bob' } });
+    const sent = sock().sent.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Kick 10 min' }));
+    expect(sock().sent).toHaveLength(sent); // nothing yet
+    fireEvent.click(screen.getByRole('button', { name: 'Really kick bob for 10 min?' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM KICK bob 10' });
+  });
+
+  it('shows no GM button to a guest', () => {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: true, message: 'Welcome back', resumed: true, gap: true });
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'GM' })).toBeNull();
+  });
+});
+
+describe('being kicked', () => {
+  it('lands on a calm "taking a break" screen with the server\'s words, and a tap asks again', () => {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: true, message: 'Welcome back', resumed: true, gap: true });
+    deliver({ t: 'error', code: 'kicked', message: 'A GM asked you to take a break for 10 minutes. You can come back after that.' });
+    expect(screen.getByRole('heading', { name: 'Taking a break' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('10 minutes');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    act(() => sock().open());
+    expect(sock().sentFrames().pop()).toMatchObject({ t: 'resume', token: 'TOK' });
+    deliver({ t: 'auth', ok: false, code: 'kicked', message: 'Please try again in about 9 minutes.' });
+    expect(screen.getByRole('status')).toHaveTextContent('about 9 minutes');
+  });
+});
