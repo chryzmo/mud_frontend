@@ -28,6 +28,8 @@ non-trivial work, and update its checklist and log when work lands.
 - `src/net/`: the new connection layer (no React). `frames.ts` parses and builds frames; `connection.ts` is the session
   state machine (join, resume, recover, reconnect, terminal states, frame counting); `backoff.ts`, `storage.ts`.
   `testdata/transcripts.json` is the server's recorded wire behaviour, replayed by `transcripts.test.ts`.
+- `src/game/`: the game model (no React): `entries.ts` turns frames into log lines (ANSI colour included), `state.ts` is the
+  reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
 - `src/components/`: `LoginModal`, `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `src/types.ts`: the `ChatMessage` union rendered by `Chatbox`.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
