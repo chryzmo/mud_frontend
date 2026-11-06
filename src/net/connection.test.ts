@@ -33,7 +33,7 @@ type H = ReturnType<typeof setup>;
 
 const GAME_START = [
   { t: 'text', text: 'You are in a room' },
-  { t: 'room', name: 'Start Room', exits: ['N'] },
+  { t: 'room', name: 'Start Room', exits: ['N'], locked: [], things: [], people: [], items: [] },
   { t: 'stats', hp: 20, maxhp: 20, mp: 10, maxmp: 10, atk: 5, atkbonus: 0, def: 10, defbonus: 0 },
 ];
 

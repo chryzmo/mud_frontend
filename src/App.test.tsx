@@ -123,7 +123,7 @@ describe('playing', () => {
 
   it('draws text, room events, stats and exits, and sends moves', () => {
     playing();
-    deliver({ t: 'room', name: 'Start Room', exits: ['N'] });
+    deliver({ t: 'room', name: 'Start Room', exits: ['N'], locked: [], things: [], people: [], items: [] });
     deliver({ t: 'text', text: "You are in 'Start Room'\n" });
     deliver({ t: 'stats', hp: 12, maxhp: 20, mp: 3, maxmp: 10, atk: 5, atkbonus: 0, def: 10, defbonus: 0 });
     deliver({ t: 'say', who: 'bob', text: 'hello there' });
@@ -158,6 +158,30 @@ describe('playing', () => {
     fireEvent.click(screen.getByText('sword'));
     fireEvent.click(screen.getByRole('button', { name: 'Pick up' }));
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET sword' });
+  });
+
+  it('lists what is here from the room frame and offers the verbs the server names', () => {
+    playing();
+    expect(screen.queryByRole('button', { name: 'Here' })).toBeNull(); // nothing to tap yet
+    deliver({
+      t: 'room', name: 'Hall', exits: [], locked: [],
+      things: [{ id: 'clock-1', name: 'first clock', verbs: ['TURN'] }],
+      people: [{ id: 'porter', name: 'Porter', verbs: [] }], items: [{ name: 'KEY', qty: 2 }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Here' }));
+    fireEvent.click(screen.getByRole('button', { name: 'first clock' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Turn' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'TURN first clock' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Here' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Porter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Talk' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'TALK Porter' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Here' }));
+    fireEvent.click(screen.getByRole('button', { name: 'KEY x2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pick up' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET KEY' });
   });
 
   it('offers Examine for names in the log and for items in the pack', () => {
@@ -419,7 +443,7 @@ describe('the game master', () => {
 
   it('gives a signed-in GM the panel, whose buttons send GM commands', () => {
     signIn();
-    deliver({ t: 'room', name: 'Start Room', exits: [] });
+    deliver({ t: 'room', name: 'Start Room', exits: [], locked: [], things: [], people: [], items: [] });
     fireEvent.click(screen.getByRole('button', { name: 'GM' }));
     expect(screen.getByRole('dialog', { name: 'Game master' })).toBeInTheDocument();
 

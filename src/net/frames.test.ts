@@ -11,7 +11,18 @@ describe('parseFrame', () => {
     expect(parseFrame(f('arrive', { who: 'bob', from: 'N' }))).toEqual({ t: 'arrive', who: 'bob', from: 'N' });
     expect(parseFrame(f('leave', { who: 'bob' }))).toEqual({ t: 'leave', who: 'bob', to: undefined });
     expect(parseFrame(f('whisper', { who: 'bob', text: 'psst', out: true }))).toEqual({ t: 'whisper', who: 'bob', text: 'psst', out: true });
-    expect(parseFrame(f('room', { name: 'Hall', exits: ['N', 7, 'S'] }))).toEqual({ t: 'room', name: 'Hall', exits: ['N', 'S'] });
+    expect(parseFrame(f('room', { name: 'Hall', exits: ['N', 7, 'S'] }))).toEqual({
+      t: 'room', name: 'Hall', exits: ['N', 'S'], locked: [], things: [], people: [], items: [],
+    });
+    expect(parseFrame(f('room', {
+      name: 'Hall', exits: ['N'], locked: ['D'],
+      things: [{ id: 'c1', name: 'clock', verbs: ['TURN', 7] }, { id: 'x' }, 'junk'],
+      people: [{ id: 'porter', name: 'Porter' }], items: [{ name: 'KEY', qty: 2 }, { name: 'GOLD' }],
+    }))).toEqual({
+      t: 'room', name: 'Hall', exits: ['N'], locked: ['D'],
+      things: [{ id: 'c1', name: 'clock', verbs: ['TURN'] }], // a bad entry is skipped, not fatal
+      people: [{ id: 'porter', name: 'Porter', verbs: [] }], items: [{ name: 'KEY', qty: 2 }, { name: 'GOLD', qty: 1 }],
+    });
     expect(parseFrame(f('inventory', { text: 'nothing' }))).toEqual({ t: 'inventory', text: 'nothing' });
     expect(parseFrame(f('stats', { hp: 5, maxhp: 20, mp: 1, maxmp: 2, atk: 3, atkbonus: 0, def: 4, defbonus: 1 }))).toEqual({
       t: 'stats', stats: { hp: 5, maxhp: 20, mp: 1, maxmp: 2, atk: 3, atkbonus: 0, def: 4, defbonus: 1 },

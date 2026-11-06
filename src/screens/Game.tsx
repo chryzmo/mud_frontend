@@ -57,6 +57,28 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
     setSheet({ title: t.name, actions });
   };
 
+  // The room frame lists what is here; each entry opens what can be done with it. The verbs a
+  // thing offers come from the server (its rules), so this needs no puzzle knowledge.
+  const showHere = () => {
+    const room = state.room;
+    if (!room) return;
+    const examine = (name: string): SheetAction => ({ label: 'Examine', run: () => send(`EXAMINE ${name}`) });
+    const open = (title: string, actions: SheetAction[]) => () => setSheet({ title, actions });
+    const entries: SheetAction[] = [
+      ...room.people.map((p) => ({ label: p.name, run: open(p.name, [{ label: 'Talk', run: () => send(`TALK ${p.name}`) }, examine(p.name)]) })),
+      ...room.things.map((t) => ({
+        label: t.name,
+        run: open(t.name, [examine(t.name), ...t.verbs.map((v) => ({ label: v.charAt(0) + v.slice(1).toLowerCase(), run: () => send(`${v} ${t.name}`) }))]),
+      })),
+      ...room.items.map((i) => ({
+        label: i.qty > 1 ? `${i.name} x${i.qty}` : i.name,
+        run: open(i.name, [{ label: 'Pick up', run: () => send(`GET ${i.name}`) }, examine(i.name)]),
+      })),
+    ];
+    setSheet({ title: 'Here', actions: entries });
+  };
+  const somethingHere = !!state.room && state.room.people.length + state.room.things.length + state.room.items.length > 0;
+
   const chooseItem = (name: string) => {
     game.dispatch({ type: 'closeInventory' });
     setSheet({
@@ -93,7 +115,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         <StatsBar stats={state.stats} />
         <div id="controls">
           <NavButtons exits={state.room?.exits ?? []} onNavigate={(dir) => send('MOVE ' + dir)} />
-          <QuickActions onCommand={send} />
+          <QuickActions onCommand={send} onHere={somethingHere ? showHere : undefined} />
         </div>
         <InputBar
           message={message}

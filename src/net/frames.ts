@@ -45,7 +45,7 @@ export type ServerFrame =
   | { t: 'leave'; who: string; to?: string }
   | { t: 'whisper'; who: string; text: string; out: boolean }
   | { t: 'stats'; stats: Stats }
-  | { t: 'room'; name: string; exits: string[] }
+  | { t: 'room'; name: string; exits: string[]; locked: string[]; things: RoomThing[]; people: RoomThing[]; items: RoomItem[] }
   | { t: 'inventory'; text: string }
   // A type this client does not know (a later phase's frame). It still counts.
   | { t: 'unknown'; type: string };
@@ -108,7 +108,8 @@ export function parseFrame(raw: unknown): ServerFrame | null {
     case 'room':
       return {
         t: 'room', name: str(m.name),
-        exits: Array.isArray(m.exits) ? m.exits.filter((e): e is string => typeof e === 'string') : [],
+        exits: strList(m.exits), locked: strList(m.locked),
+        things: things(m.things), people: things(m.people), items: roomItems(m.items),
       };
     case 'inventory':
       return { t: 'inventory', text: str(m.text) };
@@ -127,3 +128,41 @@ export const recoverFrame = (name: string, code: string): string => JSON.stringi
 // freshly loaded page: the server then treats it as remembering nothing.
 export const resumeFrame = (token: string, received?: number): string =>
   JSON.stringify(received === undefined ? { t: 'resume', token } : { t: 'resume', token, received });
+
+// What is here, as the structured room frame carries it. Every list may be missing (an older
+// server, or nothing of that kind in the room), and one bad entry is skipped, not fatal.
+export interface RoomThing {
+  id: string;
+  name: string;
+  verbs: string[];
+}
+export interface RoomItem {
+  name: string;
+  qty: number;
+}
+
+const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((e): e is string => typeof e === 'string') : []);
+
+function things(v: unknown): RoomThing[] {
+  if (!Array.isArray(v)) return [];
+  const out: RoomThing[] = [];
+  for (const e of v) {
+    if (e && typeof e === 'object' && typeof (e as { name?: unknown }).name === 'string') {
+      const m = e as { id?: unknown; name: string; verbs?: unknown };
+      out.push({ id: typeof m.id === 'string' ? m.id : m.name, name: m.name, verbs: strList(m.verbs) });
+    }
+  }
+  return out;
+}
+
+function roomItems(v: unknown): RoomItem[] {
+  if (!Array.isArray(v)) return [];
+  const out: RoomItem[] = [];
+  for (const e of v) {
+    if (e && typeof e === 'object' && typeof (e as { name?: unknown }).name === 'string') {
+      const m = e as { name: string; qty?: unknown };
+      out.push({ name: m.name, qty: typeof m.qty === 'number' ? m.qty : 1 });
+    }
+  }
+  return out;
+}
