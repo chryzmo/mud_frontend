@@ -64,9 +64,9 @@ scripts/test.sh    # type check + tests + production build
   changes, merge-conflict markers and files over 1 MB, then runs `scripts/test.sh` (skipped if
   that exact tree already passed). Don't use `git commit --no-verify` unless the user asks. If the
   secret scan flags something safe, mark that line with a `pre-commit: allow-secret` comment.
-- In Claude Code, `.claude/settings.json` adds a Stop hook (`scripts/agent-stop-hook.sh`) that runs
-  `scripts/test.sh` when a turn changed the repo and sends failures back to you. Other agents:
-  run it yourself before finishing.
+- Tests do not run automatically at the end of an agent turn. Run `scripts/test.sh` once before committing
+  or pushing (the pre-commit hook runs it again unless that exact tree already passed), and during
+  development when it makes sense.
 
 ## AI assistance attribution
 
