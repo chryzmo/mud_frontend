@@ -290,3 +290,64 @@ button:hover {
   background-color: #b8bbc2;
   font-weight: bold;
 }
+
+/* Guest screens */
+.login-note {
+  font-size: 0.85rem;
+  color: #333;
+  background: #eef3fa;
+  border: 1px solid #b7c8e2;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.recovery-code {
+  font-family: monospace;
+  font-size: 1.4rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+  background: white;
+  border: 2px dashed #555;
+  border-radius: 4px;
+  padding: 12px 8px;
+  user-select: all;
+  word-break: break-all;
+}
+
+.recovery-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.recovery-confirm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#login-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.statusline {
+  background: #fff3cd;
+  border-bottom: 1px solid #d9c36c;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+}
+
+.noticeText {
+  color: #8a6d00;
+  font-style: italic;
+}
+
+.dividerText {
+  color: #666;
+  text-align: center;
+  font-size: 0.85rem;
+  border-top: 1px dashed #999;
+  margin: 6px 0;
+  padding-top: 4px;
+}

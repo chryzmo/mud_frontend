@@ -22,16 +22,16 @@ non-trivial work, and update its checklist and log when work lands.
 
 ## Layout
 
-- `src/App.tsx`: owns the websocket, routes each server message by type, holds app state.
-- `src/protocol.ts`: the current client's wire format: parsing, outgoing frames, and how events and text become chat
-  lines. The Phase 3 rebuild replaces it with `src/net/`.
+- `src/App.tsx`: picks the screen from the connection's phase. `src/session.ts` wires storage, connection, game state and
+  the browser signals for the page (`getSession()`); `src/useSession.ts` has the React hooks.
+- `src/screens/`: `Landing` (join, recover), `RecoveryCode` (cannot be skipped), `Ended` (idle, replaced, bad version),
+  `Game`.
 - `src/net/`: the new connection layer (no React). `frames.ts` parses and builds frames; `connection.ts` is the session
   state machine (join, resume, recover, reconnect, terminal states, frame counting); `backoff.ts`, `storage.ts`.
   `testdata/transcripts.json` is the server's recorded wire behaviour, replayed by `transcripts.test.ts`.
 - `src/game/`: the game model (no React): `entries.ts` turns frames into log lines (ANSI colour included), `state.ts` is the
   reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
-- `src/components/`: `LoginModal`, `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
-- `src/types.ts`: the `ChatMessage` union rendered by `Chatbox`.
+- `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
 - `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
 - `src/index.css`: all styling (`src/css/App.css` is empty).
@@ -79,12 +79,12 @@ scripts/test.sh    # type check + tests + production build
 ## Protocol
 
 - The socket opens with the subprotocol `mud.v1` (the protocol version). Every frame, both ways, is a
-  flat JSON object with a type `t`; all of it lives in `src/protocol.ts`.
-- Client to server: `cmd {line}`, `login {username,password}`, `register {username,password}`.
-- Server to client: `text`, `say`, `arrive`, `leave`, `whisper`, `auth`, `stats`, `room`, `inventory`,
-  `error`. `eventToChat` words and styles the events; `text` still carries ANSI colour codes
-  (red = NPC, blue = player, green = item), styled per line by `textToChat`.
-- `App.tsx` routes by message type; nothing is detected by matching server wording any more.
+  flat JSON object with a type `t`; all of it lives in `src/net/frames.ts`.
+- Client to server: `cmd {line}`, `join {name}`, `resume {token, received?}`, `recover {name, code}`.
+- Server to client: `hello`, `auth`, `text`, `say`, `arrive`, `leave`, `whisper`, `stats`, `room`, `inventory`,
+  `error`. `src/game/entries.ts` words and styles the events; `text` still carries ANSI colour codes
+  (red = NPC, blue = player, green = item), styled per line by `textLines`.
+- The connection routes by frame type; nothing is detected by matching server wording.
 
 The server side is `../mud_server/src/internal/mudserver/protocol.go` (design in
 `../mud_server/plans/json-protocol.md`). Change both sides together.
@@ -137,6 +137,6 @@ differ. The replay test drives the real connection through every recorded scenar
 ## Conventions
 
 - Function components with `FC<Props>`; props interfaces defined in the component file.
-- Keep server-message parsing in one place (`App.tsx` for now) rather than spreading it through components.
+- Keep server-message parsing in `src/net/frames.ts` rather than spreading it through components.
 - Design for phones first: test at phone widths and with the on-screen keyboard open.
 - Commit or push only when asked; branch off `main` for changes.

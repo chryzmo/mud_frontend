@@ -76,6 +76,9 @@ type Request =
 const OPEN = 1;
 // Hidden for longer than this and the socket is probably dead: resume instead of trusting it.
 export const STALE_AFTER_HIDDEN_MS = 10_000;
+// A connect or request that gets no answer for this long is treated as a dropped
+// connection. A phone on a weak signal can leave a socket "connecting" forever.
+export const REPLY_TIMEOUT_MS = 15_000;
 
 const defaultCreateSocket = (url: string, protocol: string): SocketLike =>
   new WebSocket(url, protocol) as unknown as SocketLike;
@@ -98,6 +101,7 @@ export function createConnection(opts: ConnectionOptions) {
   let replayLeft = 0;
   let afterRestart = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let replyTimer: ReturnType<typeof setTimeout> | null = null; // armed while waiting for a connect or an auth reply
 
   const emit = (e: ConnEvent) => listeners.forEach((l) => l(e));
 
@@ -122,7 +126,22 @@ export function createConnection(opts: ConnectionOptions) {
   };
 
   // dropSocket detaches and closes the current socket without any handler firing.
+  const disarmReply = () => {
+    if (replyTimer !== null) clearTimeout(replyTimer);
+    replyTimer = null;
+  };
+
+  const armReply = () => {
+    disarmReply();
+    replyTimer = setTimeout(() => {
+      replyTimer = null;
+      dropSocket();
+      handleClose();
+    }, REPLY_TIMEOUT_MS);
+  };
+
   const dropSocket = () => {
+    disarmReply();
     const s = sock;
     sock = null;
     generation++;
@@ -143,6 +162,7 @@ export function createConnection(opts: ConnectionOptions) {
       const token = store.getToken();
       if (token) sock.send(resumeFrame(token, haveCount ? count : undefined));
     }
+    armReply();
   };
 
   // request starts a join, recover or resume. A socket that is open and not yet
@@ -158,6 +178,7 @@ export function createConnection(opts: ConnectionOptions) {
     const g = generation;
     const s = createSocket(url, SUBPROTOCOL);
     sock = s;
+    armReply();
     s.onopen = () => {
       if (g === generation) sendPending();
     };
@@ -198,6 +219,7 @@ export function createConnection(opts: ConnectionOptions) {
   };
 
   const handleClose = () => {
+    disarmReply();
     sock = null;
     switch (state.phase) {
       case 'ended':
@@ -220,6 +242,7 @@ export function createConnection(opts: ConnectionOptions) {
   };
 
   const admit = (f: AuthFrame) => {
+    disarmReply();
     const req = pending;
     pending = null;
     if (!req) return;
@@ -237,6 +260,7 @@ export function createConnection(opts: ConnectionOptions) {
   };
 
   const refuse = (f: AuthFrame) => {
+    disarmReply();
     const req = pending;
     if (!req) return;
     const code = f.code ?? 'failed';
@@ -272,6 +296,7 @@ export function createConnection(opts: ConnectionOptions) {
       case 'rate_limited':
         if (f.retryMs !== undefined && pending) {
           // The join limit: wait exactly as told, then ask again on the same socket.
+          disarmReply(); // the wait is the server's instruction, not a silent connection
           setState({ waitReason: 'rate_limited' });
           waitThen(retryHintDelay(f.retryMs, random), () => {
             setState({ waitReason: undefined });

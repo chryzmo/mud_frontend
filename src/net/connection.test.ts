@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Connection, ConnEvent, STALE_AFTER_HIDDEN_MS, attachBrowserSignals, createConnection } from './connection';
+import { Connection, ConnEvent, REPLY_TIMEOUT_MS, STALE_AFTER_HIDDEN_MS, attachBrowserSignals, createConnection } from './connection';
 import { KV, createSessionStore } from './storage';
 import { FakeSocket, MemoryKV, ThrowingKV } from './testSupport';
 
@@ -412,5 +412,54 @@ describe('attachBrowserSignals', () => {
     detach();
     window.dispatchEvent(new Event('online'));
     expect(conn.networkOnline).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a connection that never answers', () => {
+  it('gives up on a resume whose socket never opens, and tries a fresh socket', () => {
+    const h = setup();
+    joinOnline(h).drop();
+    vi.advanceTimersByTime(delayOf(h));
+    expect(h.sockets).toHaveLength(2); // connecting, and it stays that way: no open, no close
+    expect(h.conn.getState().phase).toBe('resuming');
+
+    vi.advanceTimersByTime(REPLY_TIMEOUT_MS);
+    expect(h.sockets[1].closedByClient).toBe(true);
+    expect(h.conn.getState()).toMatchObject({ phase: 'reconnecting', waitReason: 'connection_lost' });
+    vi.advanceTimersByTime(delayOf(h));
+    expect(h.sockets).toHaveLength(3);
+  });
+
+  it('gives up on a resume that opens but is never answered', () => {
+    const h = setup();
+    joinOnline(h).drop();
+    vi.advanceTimersByTime(delayOf(h));
+    h.last().open();
+    vi.advanceTimersByTime(REPLY_TIMEOUT_MS);
+    expect(h.conn.getState().phase).toBe('reconnecting');
+  });
+
+  it('sends a hanging join back to the join screen', () => {
+    const h = setup();
+    h.conn.join('Alice');
+    vi.advanceTimersByTime(REPLY_TIMEOUT_MS);
+    expect(h.conn.getState()).toMatchObject({ phase: 'landing', refusal: { code: 'connection_lost' } });
+  });
+
+  it('does not time out a reply that arrives, or a wait the server asked for', () => {
+    const h = setup();
+    h.conn.join('Alice');
+    h.last().open();
+    vi.advanceTimersByTime(REPLY_TIMEOUT_MS - 1);
+    h.last().deliver({ t: 'error', code: 'rate_limited', message: 'Busy.', retry_ms: 60_000 });
+    vi.advanceTimersByTime(40_000); // longer than the timeout, shorter than the server's wait
+    expect(h.conn.getState()).toMatchObject({ phase: 'joining', waitReason: 'rate_limited' });
+    expect(h.sockets).toHaveLength(1);
+
+    vi.advanceTimersByTime(30_000); // the join is sent again, and now it is answered
+    h.last().deliver({ t: 'auth', ok: true, message: 'Welcome', token: 'T', recovery: 'R' });
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(h.conn.getState().phase).toBe('online');
+    expect(h.sockets).toHaveLength(1);
   });
 });
