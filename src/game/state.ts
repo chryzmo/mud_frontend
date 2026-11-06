@@ -1,6 +1,6 @@
 // The game state a screen draws: the capped log, the room, stats and the inventory
 // text. A pure reducer; nothing here touches the socket or React.
-import { ServerFrame, Stats } from '../net/frames';
+import { RoomItem, RoomThing, ServerFrame, Stats } from '../net/frames';
 import { Entry, EntryBody, frameLines } from './entries';
 
 // A long session must not grow the page without bound: the oldest lines go first.
@@ -9,6 +9,10 @@ export const MAX_LOG = 500;
 export interface RoomInfo {
   name: string;
   exits: string[];
+  locked: string[];
+  things: RoomThing[];
+  people: RoomThing[];
+  items: RoomItem[];
 }
 
 export interface GameState {
@@ -60,7 +64,7 @@ export function reduce(state: GameState, action: GameAction): GameState {
         case 'stats':
           return { ...state, stats: f.stats };
         case 'room':
-          return { ...state, room: { name: f.name, exits: f.exits } };
+          return { ...state, room: { name: f.name, exits: f.exits, locked: f.locked, things: f.things, people: f.people, items: f.items } };
         case 'inventory':
           return { ...state, inventory: f.text };
         default:

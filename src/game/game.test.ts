@@ -32,7 +32,7 @@ describe('frameLines', () => {
   });
 
   it('adds nothing for state frames and unknown types', () => {
-    expect(frameLines({ t: 'room', name: 'Hall', exits: [] })).toEqual([]);
+    expect(frameLines({ t: 'room', name: 'Hall', exits: [], locked: [], things: [], people: [], items: [] })).toEqual([]);
     expect(frameLines({ t: 'unknown', type: 'leaderboard' })).toEqual([]);
   });
 });
@@ -40,7 +40,7 @@ describe('frameLines', () => {
 describe('reduce', () => {
   it('keeps room, stats and inventory out of the log', () => {
     let s = initialGameState();
-    s = reduce(s, { type: 'frame', frame: { t: 'room', name: 'Hall', exits: ['N', 'E'] } });
+    s = reduce(s, { type: 'frame', frame: { t: 'room', name: 'Hall', exits: ['N', 'E'], locked: [], things: [], people: [], items: [] } });
     s = reduce(s, { type: 'frame', frame: { t: 'stats', stats: { hp: 1, maxhp: 2, mp: 3, maxmp: 4, atk: 5, atkbonus: 0, def: 6, defbonus: 0 } } });
     s = reduce(s, { type: 'frame', frame: { t: 'inventory', text: 'a sword' } });
     expect(s).toMatchObject({ log: [], room: { name: 'Hall', exits: ['N', 'E'] }, stats: { hp: 1 }, inventory: 'a sword' });
@@ -59,7 +59,7 @@ describe('reduce', () => {
 
   it('starts clean for a new character but keeps the log across a resume', () => {
     let s = reduce(initialGameState(), { type: 'frame', frame: say(1) });
-    s = reduce(s, { type: 'frame', frame: { t: 'room', name: 'Hall', exits: [] } });
+    s = reduce(s, { type: 'frame', frame: { t: 'room', name: 'Hall', exits: [], locked: [], things: [], people: [], items: [] } });
     const resumed = reduce(s, { type: 'welcome', resumed: true, gap: false });
     expect(resumed).toBe(s);
     const fresh = reduce(s, { type: 'welcome', resumed: false, gap: false });
@@ -94,9 +94,9 @@ describe('createGameStore', () => {
     const { game, sock } = setup();
     let calls = 0;
     game.subscribe(() => calls++);
-    sock.deliver({ t: 'room', name: 'Start Room', exits: ['N'] });
+    sock.deliver({ t: 'room', name: 'Start Room', exits: ['N'], locked: [], things: [], people: [], items: [] });
     sock.deliver({ t: 'say', who: 'bob', text: 'hi' });
-    expect(game.getState().room).toEqual({ name: 'Start Room', exits: ['N'] });
+    expect(game.getState().room).toEqual({ name: 'Start Room', exits: ['N'], locked: [], things: [], people: [], items: [] });
     expect(game.getState().log).toHaveLength(1);
     expect(calls).toBe(2);
   });
