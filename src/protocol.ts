@@ -1,6 +1,7 @@
-// The websocket protocol: every frame, both ways, is {"v":1,"t":type,"d":payload}.
-// Server side and design: mud_server/src/internal/mudserver/protocol.go and
-// mud_server/plans/json-protocol.md.
+// The websocket protocol: every frame, both ways, is a flat JSON object with a type
+// `t`, e.g. {"t":"say","who":"bob","text":"hi"}. Server side and design:
+// mud_server/src/internal/mudserver/protocol.go and mud_server/plans/json-protocol.md.
+// The Phase 3 rebuild replaces this file with src/net/.
 import * as MUDCONST from './utils/constants';
 import { ChatMessage } from './types';
 import { Stats } from './components/StatsBar';
