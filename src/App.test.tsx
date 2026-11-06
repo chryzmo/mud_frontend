@@ -160,6 +160,21 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET sword' });
   });
 
+  it('offers Examine for names in the log and for items in the pack', () => {
+    playing();
+    deliver({ t: 'text', text: '\x1b[1;31mGrak\x1b[0m snarls at you.\n\x1b[1;32msword\x1b[0m lies here.' });
+    deliver({ t: 'say', who: 'bob', text: 'hi' });
+    for (const [tap, line] of [['Grak', 'EXAMINE Grak'], ['sword', 'EXAMINE sword'], ['bob', 'EXAMINE bob']]) {
+      fireEvent.click(screen.getByText(tap));
+      fireEvent.click(screen.getByRole('button', { name: 'Examine' }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line });
+    }
+    deliver({ t: 'inventory', text: 'Your inventory contains:\n\n\x1b[1;32m2x rusty sword\x1b[0m\n' });
+    fireEvent.click(screen.getByRole('button', { name: '2x rusty sword' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Examine' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'EXAMINE MY rusty sword' });
+  });
+
   it('whispering from the sheet fills the input instead of sending', () => {
     playing();
     deliver({ t: 'say', who: 'bob', text: 'hi' });
