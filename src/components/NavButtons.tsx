@@ -5,15 +5,15 @@ interface Props {
   onNavigate: (dir: string) => void;
 }
 
-// Rendered in a fixed compass-like grid: N on top, S below, E/W on sides, U/D flanking.
+// A fixed compass pad, so the layout does not jump as exits change: N on top, S
+// below, W and E at the sides, U and D in the corners. Only real exits are enabled.
 const NavButtons: FC<Props> = ({ exits, onNavigate }): ReactElement => {
-  if (exits.length === 0) return <></>;
-
   const btn = (dir: string) => {
     const active = exits.includes(dir);
     return (
       <button
         key={dir}
+        type="button"
         className={active ? 'navbutton' : 'navbutton navbutton-inactive'}
         disabled={!active}
         onClick={() => onNavigate(dir)}
@@ -24,9 +24,9 @@ const NavButtons: FC<Props> = ({ exits, onNavigate }): ReactElement => {
   };
 
   return (
-    <div id="navdiv">
-      <div className="navrow">{btn('U')}{btn('N')}{btn('D')}</div>
-      <div className="navrow">{btn('W')}{btn('S')}{btn('E')}</div>
+    <div id="navdiv" role="group" aria-label="Directions">
+      {btn('U')}{btn('N')}{btn('D')}
+      {btn('W')}{btn('S')}{btn('E')}
     </div>
   );
 };

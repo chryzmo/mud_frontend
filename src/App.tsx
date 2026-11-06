@@ -4,10 +4,12 @@ import Landing from './screens/Landing';
 import RecoveryCode from './screens/RecoveryCode';
 import { getSession, Session } from './session';
 import { useConnState, useRecovery } from './useSession';
+import { useViewport } from './useViewport';
 
 // App picks the screen from the connection's phase. All the rules live in
 // src/net/; this only decides what to show.
 function App({ session = getSession() }: { session?: Session }) {
+  useViewport();
   const conn = useConnState(session);
   const recovery = useRecovery(session);
   const { phase, endReason } = conn;

@@ -1,61 +1,50 @@
-import {FC, useEffect} from "react";
-import {createPortal} from "react-dom";
+import { FC, useEffect } from "react";
+import { createPortal } from "react-dom";
 import * as MUDCONST from "../utils/constants";
 
-// define interface to represent component props
 interface Props {
     isShown: boolean;
     hide: () => void;
     msgText: string;
-    setMessage: React.Dispatch<React.SetStateAction<string>>;
+    onItem: (name: string) => void;
 }
 
-//export const Modal: FunctionComponent<ModalProps> = ({
-export const InventoryModal: FC<Props> = ({ isShown, hide, msgText, setMessage }) => {
-    // Override "Enter" key behavior to close modal
-    const onKeyDown = (event: KeyboardEvent) => {
-        if ((event.key === "Enter" || event.key == "Escape") && isShown) {
-          hide();
-        }
-    };
+// itemsOf reads the INVENTORY reply: "2x sword" lines in green, after a heading.
+export function itemsOf(msgText: string): { line: string; name: string }[] {
+    const { ESCAPE_START, GREEN, ESCAPE_END } = MUDCONST.MUDCOLOR;
+    return msgText
+        .replace('Your inventory contains:', '')
+        .split('\n')
+        .map((l) => l.replace(ESCAPE_START + GREEN, '').replace(ESCAPE_END, '').trim())
+        .filter((l) => l !== '' && l !== 'Your inventory is empty.')
+        .map((line) => ({ line, name: line.replace(/^\d+x /, '') }));
+}
 
-    // Set up useEffect to close InventoryModal on "Enter" key
+export const InventoryModal: FC<Props> = ({ isShown, hide, msgText, onItem }) => {
     useEffect(() => {
-        isShown
-            ? (document.body.style.overflow = "hidden")
-            : (document.body.style.overflow = "unset");
-        document.addEventListener("keydown", onKeyDown, false);
-        return () => {
-            document.removeEventListener("keydown", onKeyDown, false);
+        if (!isShown) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Enter" || e.key === "Escape") hide();
         };
-    }, [isShown]);
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+    }, [isShown, hide]);
 
-    // Allow items to be interactive
-    const handleInventoryItemClick = (arg : string) => () => {
-        //let regex = /^.*x /
-        let item = arg.replace(/^.*x /,'');
-        setMessage("EXAMINE MY " + item)
-        hide();
-    }
-
-    // Create array of inventory items.  We will map these later
-    let msglines = msgText.replace('Your inventory contains:','').split('\n');
-
-    const modal = (
-        <div className="inventorymodal">
-            <div className="inventorymodalheader">Your inventory contains:</div><br/>
-            {
-                msglines.map(function (data) {
-                    let invline = data.replace(MUDCONST.MUDCOLOR.ESCAPE_START+MUDCONST.MUDCOLOR.GREEN,'').replace(MUDCONST.MUDCOLOR.ESCAPE_END,'');
-
-                    return (
-                        <div onClick={handleInventoryItemClick(invline)} className="inventorymodaltext"><span className='itemNameSpan'>{invline}</span></div>
-                    )
-                })
-            }
-            <button onClick={hide}>Close</button>
-        </div>
-    )
-
-    return isShown ? createPortal(modal, document.body) : null;
-}
+    if (!isShown) return null;
+    const items = itemsOf(msgText);
+    return createPortal(
+        <div className="sheet-backdrop" onClick={hide}>
+            <div className="sheet" role="dialog" aria-label="Your inventory" onClick={(e) => e.stopPropagation()}>
+                <div className="sheet-title">Your inventory</div>
+                {items.length === 0 && <div className="sheet-empty">Your inventory is empty.</div>}
+                {items.map((it) => (
+                    <button key={it.line} type="button" className="sheet-action" onClick={() => onItem(it.name)}>
+                        <span className="itemNameSpan">{it.line}</span>
+                    </button>
+                ))}
+                <button type="button" className="sheet-action sheet-cancel" onClick={hide}>Close</button>
+            </div>
+        </div>,
+        document.body,
+    );
+};

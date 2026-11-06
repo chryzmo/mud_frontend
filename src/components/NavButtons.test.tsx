@@ -3,9 +3,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import NavButtons from './NavButtons';
 
 describe('NavButtons', () => {
-  it('renders nothing until exits are known', () => {
-    const { container } = render(<NavButtons exits={[]} onNavigate={() => {}} />);
-    expect(container).toBeEmptyDOMElement();
+  it('shows the whole pad with every direction disabled until exits are known', () => {
+    render(<NavButtons exits={[]} onNavigate={() => {}} />);
+    expect(screen.getAllByRole('button')).toHaveLength(6);
+    screen.getAllByRole('button').forEach((b) => expect(b).toBeDisabled());
   });
 
   it('enables only the directions the room has', () => {
