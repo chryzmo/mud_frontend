@@ -1,8 +1,13 @@
 import React, { ReactElement, FC, useRef } from "react";
-import { sendMUDMessage } from "../utils/SendMUDMessage";
-import MUDProps from "../props/MUDProps";
 
-const InputBar: FC<MUDProps> = ({ ws, message, setMessage, inputRef, addMessage }): ReactElement => {
+interface Props {
+  message: string;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  inputRef: React.RefObject<HTMLInputElement>;
+  onSend: (line: string) => void;
+}
+
+const InputBar: FC<Props> = ({ message, setMessage, inputRef, onSend }): ReactElement => {
   const history = useRef<string[]>([]);
   const historyIndex = useRef<number>(-1);
   const draft = useRef<string>("");
@@ -12,7 +17,7 @@ const InputBar: FC<MUDProps> = ({ ws, message, setMessage, inputRef, addMessage 
     history.current = [message, ...history.current];
     historyIndex.current = -1;
     draft.current = "";
-    sendMUDMessage(ws, message, setMessage, addMessage);
+    onSend(message);
   };
 
   const handleInputFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {

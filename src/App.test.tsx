@@ -1,83 +1,209 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import App from './App';
+import { FakeSocket, MemoryKV } from './net/testSupport';
+import { createSession, Session } from './session';
 
-// App opens its socket at module load, so the stub must exist before it is imported.
-class FakeSocket {
-  static last: FakeSocket;
-  sent: string[] = [];
-  protocols: unknown;
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: ((ev: { data: string }) => void) | null = null;
-  constructor(_url: string, protocols?: unknown) { this.protocols = protocols; FakeSocket.last = this; }
-  send(data: string) { this.sent.push(data); }
+let sockets: FakeSocket[];
+let kv: MemoryKV;
+let session: Session;
+
+const sock = () => sockets[sockets.length - 1];
+const deliver = (frame: object) => act(() => sock().deliver(frame));
+const AUTH = { t: 'auth', ok: true, message: 'Welcome', resumed: false, gap: false };
+
+function mount(preset: Record<string, string> = {}) {
+  kv = new MemoryKV();
+  Object.entries(preset).forEach(([k, v]) => kv.setItem(k, v));
+  sockets = [];
+  session = createSession({
+    backing: kv, url: 'ws://t/ws', signals: false,
+    createSocket: () => { const s = new FakeSocket(); sockets.push(s); return s; },
+  });
+  session.conn.start();
+  render(<App session={session} />);
 }
 
-const frame = (t: string, fields: Record<string, unknown> = {}) => JSON.stringify({ t, ...fields });
-const deliver = (t: string, fields: Record<string, unknown> = {}) => act(() => { FakeSocket.last.onmessage!({ data: frame(t, fields) }); });
+// Type a name and press Play, then let the server admit us.
+function joinAs(name: string) {
+  fireEvent.change(screen.getByLabelText('Pick a name'), { target: { value: name } });
+  fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+  act(() => sock().open());
+}
 
-describe('App message routing', () => {
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.stubGlobal('WebSocket', FakeSocket);
-    Element.prototype.scrollIntoView = vi.fn(); // jsdom doesn't implement it
-    const { default: App } = await import('./App');
-    render(<App />);
-  });
-  afterEach(() => { vi.unstubAllGlobals(); });
+beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn(); // jsdom doesn't implement it
+});
+afterEach(() => session.dispose());
 
-  it('shows the login card and ignores the pre-login greeting text', () => {
-    deliver('text', { text: 'Welcome to the MUD!\nRegister or log in to play.\n' });
-    expect(screen.getByText('Welcome to the MUD', { selector: '#login-title' })).toBeInTheDocument();
-    expect(document.querySelector('.login-error, #login-error')).toBeNull();
-  });
-
-  it('shows an auth failure and stays on the login card', () => {
-    deliver('auth', { ok: false, code: 'bad_password', message: 'Incorrect password.' });
-    expect(screen.getByText('Incorrect password.')).toBeInTheDocument();
-    expect(screen.getByText('Welcome to the MUD', { selector: '#login-title' })).toBeInTheDocument();
+describe('joining as a guest', () => {
+  it('offers a name and no password', () => {
+    mount();
+    expect(screen.getByLabelText('Pick a name')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/password/i)).toBeNull();
   });
 
-  it('logs in on auth ok, then routes text, stats, room and inventory', () => {
-    deliver('auth', { ok: true, message: 'Welcome back, ann!' });
-    expect(document.getElementById('login-overlay')).toBeNull();
+  it('sends join, then holds the player on the recovery code until they confirm it', () => {
+    mount();
+    joinAs('Alice');
+    expect(sock().sentFrames()).toEqual([{ t: 'join', name: 'Alice' }]);
+    deliver({ ...AUTH, token: 'TOK', recovery: 'ABCD-EFGH-JKLM' });
 
-    deliver('text', { text: "You are in 'Start Room'\n" });
+    expect(screen.getByTestId('recovery-code')).toHaveTextContent('ABCD-EFGH-JKLM');
+    const start = screen.getByRole('button', { name: 'Start playing' });
+    expect(start).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('I have saved my code'));
+    fireEvent.click(start);
+
+    expect(screen.queryByTestId('recovery-code')).toBeNull();
+    expect(screen.getByRole('textbox', { name: '' })).toBeInTheDocument(); // the command box
+    expect(kv.getItem('mud.recovery')).toBeNull();
+  });
+
+  it('shows the recovery code again after a reload until it is confirmed', () => {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice', 'mud.recovery': 'ABCD-EFGH-JKLM' });
+    expect(screen.getByTestId('recovery-code')).toHaveTextContent('ABCD-EFGH-JKLM');
+  });
+
+  it('shows why a name was refused and lets the player try another', () => {
+    mount();
+    joinAs('Alice');
+    deliver({ t: 'auth', ok: false, code: 'name_taken', message: 'That name is taken.', resumed: false, gap: false });
+    expect(screen.getByRole('alert')).toHaveTextContent('That name is taken.');
+    fireEvent.change(screen.getByLabelText('Pick a name'), { target: { value: 'Alice2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'join', name: 'Alice2' });
+    expect(sockets).toHaveLength(1); // the same connection
+  });
+
+  it('tells the player to wait when the server is rate limiting joins', () => {
+    mount();
+    joinAs('Alice');
+    deliver({ t: 'error', code: 'rate_limited', message: 'Busy.', retry_ms: 1000 });
+    expect(screen.getByText(/Lots of players are joining/)).toBeInTheDocument();
+  });
+});
+
+describe('recovering a character', () => {
+  it('sends the name and code, and shows the new code', () => {
+    mount();
+    fireEvent.click(screen.getByRole('button', { name: 'I have a recovery code' }));
+    fireEvent.change(screen.getByLabelText('Character name'), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText('Recovery code'), { target: { value: 'ABCD-EFGH-JKLM' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Recover' }));
+    act(() => sock().open());
+    expect(sock().sentFrames()).toEqual([{ t: 'recover', name: 'Alice', code: 'ABCD-EFGH-JKLM' }]);
+    deliver({ ...AUTH, resumed: true, token: 'NEW', recovery: 'WXYZ-WXYZ-WXYZ' });
+    expect(screen.getByTestId('recovery-code')).toHaveTextContent('WXYZ-WXYZ-WXYZ');
+  });
+
+  it('says how long a locked name must wait', () => {
+    mount();
+    fireEvent.click(screen.getByRole('button', { name: 'I have a recovery code' }));
+    fireEvent.change(screen.getByLabelText('Character name'), { target: { value: 'Alice' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Recover' }));
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: false, code: 'recovery_locked', message: 'Locked.', retry_ms: 900000, resumed: false, gap: false });
+    expect(screen.getByRole('alert')).toHaveTextContent('Try again in 15 minutes');
+  });
+});
+
+describe('playing', () => {
+  function playing() {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ ...AUTH, resumed: true, gap: true });
+  }
+
+  it('resumes a stored character straight into the game', () => {
+    playing();
+    expect(sock().sentFrames()).toEqual([{ t: 'resume', token: 'TOK' }]); // a fresh page has no count
+    expect(screen.getByText(/Some messages may have been missed/)).toBeInTheDocument();
+  });
+
+  it('draws text, room events, stats and exits, and sends moves', () => {
+    playing();
+    deliver({ t: 'room', name: 'Start Room', exits: ['N'] });
+    deliver({ t: 'text', text: "You are in 'Start Room'\n" });
+    deliver({ t: 'stats', hp: 12, maxhp: 20, mp: 3, maxmp: 10, atk: 5, atkbonus: 0, def: 10, defbonus: 0 });
+    deliver({ t: 'say', who: 'bob', text: 'hello there' });
+    deliver({ t: 'whisper', who: 'bob', text: 'psst', out: false });
     expect(screen.getByText("You are in 'Start Room'")).toBeInTheDocument();
-
-    deliver('stats', { hp: 12, maxhp: 20, mp: 3, maxmp: 10, atk: 5, atkbonus: 0, def: 10, defbonus: 0 });
     expect(screen.getByText('12 / 20')).toBeInTheDocument();
+    expect(screen.getByText(/^\s*says: "hello there"$/)).toBeInTheDocument();
+    expect(screen.getByText('bob whispers, "psst"')).toHaveClass('whisperText');
 
-    deliver('room', { name: 'Start Room', exits: ['N'] });
-    expect(screen.getByRole('button', { name: /^N/ })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /^N/ }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'MOVE N' });
+    expect(screen.getByText('> MOVE N')).toBeInTheDocument();
+  });
 
-    deliver('error', { code: 'unknown_command', message: 'Unknown command.' });
-    expect(screen.getByText('Unknown command.')).toBeInTheDocument();
+  it('sends what is typed and clears the box', () => {
+    playing();
+    const box = screen.getByPlaceholderText('What would you like to do..?');
+    fireEvent.input(box, { target: { value: 'SAY hi' } });
+    fireEvent.submit(box.closest('form')!);
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'SAY hi' });
+    expect(box).toHaveValue('');
+  });
 
-    deliver('inventory', { text: 'Your inventory is empty.' });
+  it('shows the inventory reply', () => {
+    playing();
+    deliver({ t: 'inventory', text: 'Your inventory is empty.' });
     expect(screen.getByText(/Your inventory is empty\./)).toBeInTheDocument();
   });
 
-  it('shows room events and whispers in the wording the client owns', () => {
-    deliver('auth', { ok: true, message: 'Welcome back, ann!' });
-    deliver('say', { who: 'bob', text: 'hello there' });
-    expect(screen.getByText(/^\s*says: "hello there"$/)).toBeInTheDocument();
-    deliver('arrive', { who: 'cy' });
-    expect(screen.getByText(/^\s*has appeared in the room\.$/)).toBeInTheDocument();
-    deliver('leave', { who: 'cy', to: 'N' });
-    expect(screen.getByText(/^\s*has left to the N\.$/)).toBeInTheDocument();
-    deliver('whisper', { who: 'bob', text: 'psst' });
-    expect(screen.getByText('bob whispers, "psst"')).toHaveClass('whisperText');
-    deliver('whisper', { who: 'bob', text: 'ok', out: true });
-    expect(screen.getByText('You whisper to bob, "ok"')).toBeInTheDocument();
+  it('keeps the game on screen and says so while reconnecting', () => {
+    playing();
+    act(() => sock().drop());
+    expect(screen.getByRole('status')).toHaveTextContent('Connection lost. Reconnecting');
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toBeInTheDocument();
   });
 
-  it('opens the socket with the protocol subprotocol', () => {
-    expect(FakeSocket.last.protocols).toBe('mud.v1');
+  it('says when the browser is offline', () => {
+    playing();
+    act(() => session.conn.networkOffline());
+    expect(screen.getByRole('status')).toHaveTextContent('offline');
+  });
+});
+
+describe('sessions that end', () => {
+  function playing() {
+    mount({ 'mud.token': 'TOK', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ ...AUTH, resumed: true });
+  }
+
+  it('idle: explains, and one tap resumes with the count the page had', () => {
+    playing();
+    deliver({ t: 'text', text: 'hello' });
+    deliver({ t: 'error', code: 'idle', message: 'Idle.' });
+    expect(screen.getByText('Still there?')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the game' }));
+    act(() => sock().open());
+    expect(sock().sentFrames()).toEqual([{ t: 'resume', token: 'TOK', received: 1 }]);
   });
 
-  it('ignores frames that are not v1 envelopes', () => {
-    act(() => { FakeSocket.last.onmessage!({ data: 'Welcome back, ann!' }); });
-    expect(document.getElementById('login-overlay')).not.toBeNull();
+  it('replaced: explains and offers to play here', () => {
+    playing();
+    deliver({ t: 'error', code: 'replaced', message: 'Elsewhere.' });
+    expect(screen.getByText('Opened somewhere else')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Play here instead' })).toBeInTheDocument();
+  });
+
+  it('bad token: lands on recovery with the saved name filled in', () => {
+    mount({ 'mud.token': 'OLD', 'mud.name': 'Alice' });
+    act(() => sock().open());
+    deliver({ t: 'auth', ok: false, code: 'bad_token', message: 'No.', resumed: false, gap: false });
+    expect(screen.getByText(/could not find your session/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Character name')).toHaveValue('Alice');
+    expect(screen.getByLabelText('Recovery code')).toBeInTheDocument();
+  });
+
+  it('bad version: asks for a reload', () => {
+    mount();
+    joinAs('Alice');
+    deliver({ t: 'error', code: 'bad_version', message: 'Old.' });
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
   });
 });
