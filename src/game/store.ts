@@ -6,7 +6,8 @@ import { GameAction, GameState, initialGameState, reduce } from './state';
 export interface GameStore {
   getState(): GameState;
   subscribe(listener: () => void): () => void;
-  // Send a command line the player typed or tapped, echoing it into the log.
+  // Send a command line the player typed or tapped, echoing it into the log. If the
+  // connection is down it is not sent, and a notice says so.
   send(line: string): void;
   dispatch(action: GameAction): void;
   dispose(): void;
@@ -46,8 +47,10 @@ export function createGameStore(conn: Connection): GameStore {
     send(line) {
       const trimmed = line.trim();
       if (trimmed === '') return;
-      dispatch({ type: 'echo', line: trimmed });
-      conn.sendCommand(trimmed);
+      // Echo only what was really sent: a command typed while the connection is down is
+      // refused, not silently lost behind an echo that makes it look as if it went out.
+      if (conn.sendCommand(trimmed)) dispatch({ type: 'echo', line: trimmed });
+      else dispatch({ type: 'notice', message: 'Not connected right now. Try again in a moment.' });
     },
     dispatch,
     dispose() {
