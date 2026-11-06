@@ -24,7 +24,7 @@ const StatsBar: FC<Props> = ({ stats }): ReactElement => {
       : <span>{value}</span>;
 
   return (
-    <div id="statsbar">
+    <div id="statsbar" role="group" aria-label="Your stats">
       <div className="stat-row">
         <span className="stat-label">HP</span>
         <span className="stat-value hp-value">{stats.hp} / {stats.maxhp}</span>

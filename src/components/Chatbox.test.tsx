@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import Chatbox from './Chatbox';
+import Chatbox, { chatPerf } from './Chatbox';
 import { Entry } from '../game/entries';
 
 const lines = (from: number, to: number): Entry[] =>
@@ -56,5 +56,24 @@ describe('Chatbox', () => {
     expect(onSelect.mock.calls.map((c) => c[0])).toEqual([
       { kind: 'player', name: 'bob' }, { kind: 'npc', name: 'Grak' }, { kind: 'item', name: 'sword' },
     ]);
+  });
+
+  it('renders only the new line when one arrives, not the whole log', () => {
+    const all = lines(1, 502); // the same objects each time, as the reducer keeps them
+    const { rerender } = render(<Chatbox entries={all.slice(0, 500)} onSelect={() => {}} />);
+    chatPerf.rowRenders = 0;
+    rerender(<Chatbox entries={all.slice(1, 501)} onSelect={() => {}} />); // the log is capped: one in, one out
+    expect(chatPerf.rowRenders).toBe(1);
+    // A parent that passes a new callback on every render must not defeat that.
+    chatPerf.rowRenders = 0;
+    rerender(<Chatbox entries={all.slice(2, 502)} onSelect={() => {}} />);
+    expect(chatPerf.rowRenders).toBe(1);
+  });
+
+  it('is a labelled log that screen readers announce additions to', () => {
+    render(<Chatbox entries={lines(1, 2)} onSelect={() => {}} />);
+    const log = screen.getByRole('log', { name: 'Game log' });
+    expect(log).toHaveAttribute('aria-live', 'polite');
+    expect(log).toHaveAttribute('aria-relevant', 'additions');
   });
 });

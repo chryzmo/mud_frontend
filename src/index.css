@@ -1,14 +1,67 @@
 /* Layout tokens. The app is sized from the visible viewport (--app-height, --app-top,
    set from visualViewport) so the on-screen keyboard cannot cover the input. */
 :root {
+  color-scheme: light dark;
   --bg: #e9eef5;
   --panel: #ffffff;
+  --card: #f5f0e8;
   --ink: #1b1f24;
-  --muted: #5b6573;
-  --line: #b7c0cc;
-  --accent: #3a6aa8;
+  --muted: #566070;
+  --line: #aab4c1;
+  --accent: #2f5f9e;
+  --accent-ink: #ffffff;
+  --press: #d6dde8;
+  --scrim: rgba(0, 0, 0, 0.45);
+  --danger: #a8200f;
+  --danger-bg: #fdecea;
+  --danger-line: #e8b4b0;
+  --note-ink: #1b1f24;
+  --note-bg: #eef3fa;
+  --note-line: #b7c8e2;
+  --warn-ink: #5c4400;
+  --warn-bg: #fff3cd;
+  --warn-line: #d9c36c;
+  --npc: #b3261e;
+  --player: #1a4fd0;
+  --item: #1b6b2b;
+  --whisper: #9a1ab0;
+  --hp: #b42318;
+  --mp: #1d6fa5;
+  --boost: #7a5b00;
   --tap: 44px; /* minimum touch target */
   --gap: 8px;
+}
+
+/* Dark: follows the phone's setting. Every text/background pair is checked in theme.test.ts. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1418;
+    --panel: #1a2128;
+    --card: #222b34;
+    --ink: #e6eaee;
+    --muted: #a3aebb;
+    --line: #46525e;
+    --accent: #6b9ee3;
+    --accent-ink: #0b1220;
+    --press: #2c3742;
+    --scrim: rgba(0, 0, 0, 0.65);
+    --danger: #ffa59c;
+    --danger-bg: #3b1d1d;
+    --danger-line: #7a3a36;
+    --note-ink: #e6eaee;
+    --note-bg: #1d2a3a;
+    --note-line: #35506f;
+    --warn-ink: #f4de9a;
+    --warn-bg: #3a3012;
+    --warn-line: #6b5a1c;
+    --npc: #ff8a80;
+    --player: #8ab4ff;
+    --item: #7fd98f;
+    --whisper: #e58cf5;
+    --hp: #ff8f85;
+    --mp: #7cc0ee;
+    --boost: #f0c75e;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -41,6 +94,8 @@ html, body {
   display: flex;
   flex-direction: column;
 }
+
+#header h1 { margin: 0; font-size: inherit; }
 
 #header {
   flex-shrink: 0;
@@ -88,9 +143,9 @@ html, body {
   border-radius: 18px;
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: white;
+  color: var(--accent-ink);
   font-size: 0.9rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px var(--scrim);
 }
 
 /* Everything under the log */
@@ -113,9 +168,9 @@ html, body {
 
 .stat-row { display: flex; gap: 4px; align-items: baseline; }
 .stat-label { font-weight: bold; color: var(--muted); }
-.hp-value { color: #c0392b; }
-.mp-value { color: #2980b9; }
-.stat-boosted { font-weight: bold; color: #b8860b; }
+.hp-value { color: var(--hp); }
+.mp-value { color: var(--mp); }
+.stat-boosted { font-weight: bold; color: var(--boost); }
 
 /* Compass on the left, quick actions on the right */
 #controls {
@@ -170,7 +225,7 @@ button {
   font-size: 1rem;
   touch-action: manipulation;
 }
-button:active:not(:disabled) { background: #d6dde8; }
+button:active:not(:disabled) { background: var(--press); }
 input[type="text"] {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -180,20 +235,21 @@ input[type="text"] {
 }
 
 /* Coloured names */
-.npcNameSpan { color: #c62828; }
-.playerNameSpan { color: #1a4fd0; }
-.itemNameSpan { color: #1b7a2b; }
-.whisperText { color: #a21caf; }
+.npcNameSpan { color: var(--npc); }
+.playerNameSpan { color: var(--player); }
+.itemNameSpan { color: var(--item); }
+.whisperText { color: var(--whisper); }
 
 .statusline {
   flex-shrink: 0;
-  background: #fff3cd;
-  border-bottom: 1px solid #d9c36c;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border-bottom: 1px solid var(--warn-line);
   padding: 4px var(--gap);
   font-size: 0.9rem;
 }
 
-.noticeText { color: #8a6d00; font-style: italic; }
+.noticeText { color: var(--warn-ink); font-style: italic; }
 
 .dividerText {
   color: var(--muted);
@@ -211,7 +267,7 @@ input[type="text"] {
   left: 0;
   right: 0;
   height: var(--app-height, 100dvh);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--scrim);
   display: flex;
   align-items: flex-end;
   z-index: 2000;
@@ -242,7 +298,7 @@ input[type="text"] {
   right: 0;
   height: var(--app-height, 100dvh);
   overflow-y: auto;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--scrim);
   display: flex;
   align-items: safe center;
   justify-content: center;
@@ -250,13 +306,14 @@ input[type="text"] {
 }
 
 #login-card {
-  background: #f5f0e8;
-  border: 2px solid #555;
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--line);
   border-radius: 8px;
   padding: 32px 36px;
   width: min(340px, calc(100vw - 32px));
   box-sizing: border-box;
-  box-shadow: 8px 8px rgba(0, 0, 0, 0.45);
+  box-shadow: 6px 6px var(--scrim);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -266,7 +323,7 @@ input[type="text"] {
   margin: 0;
   font-size: 1.3rem;
   text-align: center;
-  color: #222;
+  color: var(--ink);
 }
 
 .login-field {
@@ -278,27 +335,27 @@ input[type="text"] {
 .login-field label {
   font-size: 0.85rem;
   font-weight: bold;
-  color: #444;
+  color: var(--muted);
 }
 
 .login-field input {
   padding: 10px 8px;
-  border: 1px solid #999;
+  border: 1px solid var(--line);
   border-radius: 4px;
   font-size: 16px; /* under 16px, iOS zooms the page on focus */
   box-shadow: none;
 }
 
 .login-field input:focus {
-  outline: 2px solid #4a7aba;
-  border-color: #4a7aba;
+  outline: 2px solid var(--accent);
+  border-color: var(--accent);
 }
 
 .login-error {
-  color: #c0392b;
+  color: var(--danger);
   font-size: 0.85rem;
-  background: #fdecea;
-  border: 1px solid #e8b4b0;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
   border-radius: 4px;
   padding: 6px 8px;
 }
@@ -309,12 +366,12 @@ input[type="text"] {
   padding: 8px;
   font-size: 1rem;
   font-weight: bold;
-  background: #4a7aba;
-  color: white;
+  background: var(--accent);
+  color: var(--accent-ink);
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  box-shadow: 3px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 3px 3px var(--scrim);
 }
 
 
@@ -324,13 +381,13 @@ input[type="text"] {
   gap: 8px;
   justify-content: center;
   font-size: 0.85rem;
-  color: #555;
+  color: var(--muted);
 }
 
 .login-link-btn {
   background: none;
   border: none;
-  color: #4a7aba;
+  color: var(--accent);
   cursor: pointer;
   font-size: 0.85rem;
   padding: 0;
@@ -342,9 +399,9 @@ input[type="text"] {
 /* Guest screens */
 .login-note {
   font-size: 0.85rem;
-  color: #333;
-  background: #eef3fa;
-  border: 1px solid #b7c8e2;
+  color: var(--note-ink);
+  background: var(--note-bg);
+  border: 1px solid var(--note-line);
   border-radius: 4px;
   padding: 6px 8px;
 }
@@ -354,8 +411,9 @@ input[type="text"] {
   font-size: 1.4rem;
   text-align: center;
   letter-spacing: 0.05em;
-  background: white;
-  border: 2px dashed #555;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px dashed var(--line);
   border-radius: 4px;
   padding: 12px 8px;
   user-select: all;
@@ -381,5 +439,19 @@ input[type="text"] {
 
 
 .statusline { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
-.statusline.warn { background: #fde8e8; border-bottom-color: #e3a5a5; }
+.statusline.warn { background: var(--danger-bg); color: var(--danger); border-bottom-color: var(--danger-line); }
 .statusline-retry { min-height: 32px; padding: 0 12px; font-size: 0.9rem; flex-shrink: 0; }
+
+/* A visible keyboard focus ring everywhere, and no motion for players who ask for none. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
