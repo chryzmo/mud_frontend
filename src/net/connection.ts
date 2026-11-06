@@ -371,6 +371,16 @@ export function createConnection(opts: ConnectionOptions) {
       request({ kind: 'resume' });
     },
 
+    // retryNow is the player's "try again now" while the game is reconnecting: skip the wait,
+    // or give up on an attempt that is taking too long, and connect again straight away.
+    retryNow() {
+      if (state.phase !== 'reconnecting' && state.phase !== 'resuming') return;
+      clearTimer();
+      dropSocket();
+      setState({ retryAt: undefined });
+      connectResume();
+    },
+
     sendCommand(line: string): boolean {
       if (!admitted || !sock || sock.readyState !== OPEN) return false;
       sock.send(cmdFrame(line));

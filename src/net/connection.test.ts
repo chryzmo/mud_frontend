@@ -463,3 +463,42 @@ describe('a connection that never answers', () => {
     expect(h.sockets).toHaveLength(1);
   });
 });
+
+describe('retryNow', () => {
+  it('connects again straight away instead of waiting out the backoff', () => {
+    const h = setup();
+    joinOnline(h).drop();
+    vi.advanceTimersByTime(delayOf(h));
+    h.last().drop(); // the second attempt fails too, so the next wait is a second or more
+    expect(h.conn.getState().phase).toBe('reconnecting');
+    const before = h.sockets.length;
+
+    h.conn.retryNow();
+    expect(h.sockets).toHaveLength(before + 1);
+    expect(h.conn.getState()).toMatchObject({ phase: 'resuming', retryAt: undefined });
+    h.last().open();
+    h.last().deliver({ t: 'auth', ok: true, message: 'back', resumed: true });
+    expect(h.conn.getState().phase).toBe('online');
+  });
+
+  it('abandons an attempt that is hanging and starts a fresh one', () => {
+    const h = setup();
+    joinOnline(h).drop();
+    vi.advanceTimersByTime(delayOf(h)); // connecting, never opens
+    const hung = h.last();
+    h.conn.retryNow();
+    expect(hung.closedByClient).toBe(true);
+    expect(h.last()).not.toBe(hung);
+  });
+
+  it('does nothing when the game is online or the session has ended', () => {
+    const h = setup();
+    const s = joinOnline(h);
+    h.conn.retryNow();
+    expect(h.sockets).toHaveLength(1);
+    s.deliver({ t: 'error', code: 'idle', message: 'Idle.' });
+    h.conn.retryNow();
+    expect(h.sockets).toHaveLength(1);
+    expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'idle' });
+  });
+});

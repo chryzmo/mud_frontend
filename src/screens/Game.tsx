@@ -6,27 +6,20 @@ import InputBar from '../components/InputBar';
 import { InventoryModal } from '../components/InventoryModal';
 import NavButtons from '../components/NavButtons';
 import QuickActions from '../components/QuickActions';
+import StatusLine from '../components/StatusLine';
 import StatsBar from '../components/StatsBar';
 import { ConnState } from '../net/connection';
 import { Session } from '../session';
 import { useGameState } from '../useSession';
+import { useVisibleHeight } from '../useViewport';
 
 interface Props {
   session: Session;
   conn: ConnState;
 }
 
-// The line above the log when the game is not live, or empty.
-export function statusText(conn: ConnState): string {
-  if (conn.offline) return 'You are offline. Waiting for the network…';
-  if (conn.phase === 'resuming') return 'Reconnecting…';
-  if (conn.phase === 'reconnecting') {
-    if (conn.waitReason === 'server_restarting') return 'The game is restarting. Reconnecting…';
-    if (conn.waitReason === 'at_capacity') return 'The game is full. Trying again…';
-    return 'Connection lost. Reconnecting…';
-  }
-  return '';
-}
+// Below this visible height (keyboard up, or a phone on its side) the log needs the room.
+export const CRAMPED_BELOW_PX = 420;
 
 interface Sheet {
   title: string;
@@ -40,7 +33,9 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const [typing, setTyping] = useState(false); // the keyboard is up: give the log the room
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const status = statusText(conn);
+  // The compass and stats make way only when the keyboard leaves too little room for the log.
+  const visibleHeight = useVisibleHeight();
+  const cramped = typing && visibleHeight < CRAMPED_BELOW_PX;
 
   const send = useCallback((line: string) => game.send(line), [game]);
   const fill = (text: string) => {
@@ -82,9 +77,9 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   }, []);
 
   return (
-    <div id="game" className={typing ? 'typing' : ''}>
+    <div id="game" className={cramped ? 'cramped' : ''}>
       <Header title={state.room ? state.room.name : 'MUD Client'} />
-      {status && <div className="statusline" role="status">{status}</div>}
+      <StatusLine conn={conn} onRetry={session.conn.retryNow} />
       <Chatbox entries={state.log} onSelect={choose} />
       <div id="bottombar">
         <StatsBar stats={state.stats} />
