@@ -134,6 +134,21 @@ const after: Record<string, (h: Harness) => Promise<void>> = {
     expect(h.conn.getState()).toMatchObject({ phase: 'online', retryAt: undefined });
     expect(h.events.filter((e) => e.type === 'notice')).toHaveLength(1); // a notice, not a wait
   },
+  'kicked#0': async (h) => {
+    expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'kicked' });
+    expect(h.conn.getState().endMessage).toContain('take a break');
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(h.sockets).toHaveLength(1); // no reconnecting by itself
+    expect(h.kv.getItem('mud.token')).toBe('TOKEN-1'); // the character is kept
+  },
+  'kicked#1': async (h) => {
+    // A page reloaded during the break: refused, and it stays refused without a reconnect loop.
+    expect(h.conn.getState()).toMatchObject({ phase: 'ended', endReason: 'kicked' });
+    expect(h.conn.getState().endMessage).toContain('take a break');
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(h.sockets).toHaveLength(2);
+    expect(h.kv.getItem('mud.token')).toBe('TOKEN-1');
+  },
   'recover#1': async (h) => {
     expect(h.kv.getItem('mud.token')).toBe('TOKEN-2'); // both secrets replaced
     expect(h.kv.getItem('mud.recovery')).toBe('RECOVERY-2');

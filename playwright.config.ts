@@ -9,6 +9,7 @@ const WEB_PORT = 4173;
 
 export default defineConfig({
   testDir: 'e2e',
+  globalSetup: './e2e/global-setup.ts', // adds the game master the staff tests sign in as
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0, // a flaky test is a bug to fix, not to retry

@@ -1,8 +1,9 @@
 import Ended from './screens/Ended';
 import Game from './screens/Game';
 import Landing from './screens/Landing';
+import StaffLogin from './screens/StaffLogin';
 import RecoveryCode from './screens/RecoveryCode';
-import { getSession, Session } from './session';
+import { getSession, isStaffRoute, Session } from './session';
 import { useConnState, useRecovery } from './useSession';
 import { useViewport } from './useViewport';
 
@@ -16,14 +17,15 @@ function App({ session = getSession() }: { session?: Session }) {
 
   const inGame = phase === 'online' || phase === 'resuming' || phase === 'reconnecting';
   // The code is kept until the player confirms it, so a reload shows it again.
-  if (recovery && inGame) {
+  if (recovery && inGame && !conn.staff) {
     return <RecoveryCode code={recovery} onConfirm={session.recovery.acknowledge} />;
   }
   if (inGame) return <Game session={session} conn={conn} />;
 
   if (phase === 'ended' && endReason && endReason !== 'bad_token') {
-    return <Ended reason={endReason} onResume={session.conn.resume} />;
+    return <Ended reason={endReason} message={conn.endMessage} onResume={session.conn.resume} />;
   }
+  if (isStaffRoute()) return <StaffLogin conn={conn} onLogin={session.conn.login} />;
   const lostToken = phase === 'ended' && endReason === 'bad_token';
   return (
     <Landing

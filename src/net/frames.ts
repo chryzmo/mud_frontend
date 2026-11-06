@@ -120,6 +120,8 @@ export function parseFrame(raw: unknown): ServerFrame | null {
 // Outgoing frames.
 export const cmdFrame = (line: string): string => JSON.stringify({ t: 'cmd', line });
 export const joinFrame = (name: string): string => JSON.stringify({ t: 'join', name });
+// A password account (the GM) signs in with login; guests never do.
+export const loginFrame = (name: string, password: string): string => JSON.stringify({ t: 'login', username: name, password });
 export const recoverFrame = (name: string, code: string): string => JSON.stringify({ t: 'recover', name, code });
 // received is how many counted frames this page has processed. Leave it out on a
 // freshly loaded page: the server then treats it as remembering nothing.

@@ -3,7 +3,7 @@
 // protocol (mud_server/plans/guest-sessions.md) and are pinned by the recorded
 // transcripts in testdata/transcripts.json.
 import {
-  AuthFrame, ErrorFrame, ServerFrame, SUBPROTOCOL, cmdFrame, isCounted, joinFrame, parseFrame, recoverFrame, resumeFrame,
+  AuthFrame, ErrorFrame, ServerFrame, SUBPROTOCOL, cmdFrame, isCounted, joinFrame, loginFrame, parseFrame, recoverFrame, resumeFrame,
 } from './frames';
 import { Random, reconnectDelay, retryHintDelay, returnDelay } from './backoff';
 import { SessionStore } from './storage';
@@ -17,9 +17,9 @@ export type Phase =
   | 'reconnecting' // the connection dropped; waiting to try again
   | 'ended'; // terminal: no automatic reconnect, the player must tap
 
-// Why a session ended for good. idle and replaced keep the token (a tap resumes);
-// bad_token cleared it; bad_version needs a page reload.
-export type EndReason = 'idle' | 'replaced' | 'bad_token' | 'bad_version';
+// Why a session ended for good. idle, replaced and kicked keep the token (a tap resumes, and a
+// kick is refused until its break is over); bad_token cleared it; bad_version needs a page reload.
+export type EndReason = 'idle' | 'replaced' | 'bad_token' | 'bad_version' | 'kicked';
 
 export type WaitReason = 'rate_limited' | 'at_capacity' | 'busy' | 'server_restarting' | 'connection_lost';
 
@@ -33,12 +33,14 @@ export interface Refusal {
 export interface ConnState {
   phase: Phase;
   endReason?: EndReason;
+  endMessage?: string; // the server's own words for why (a kick says for how long)
   attempt: number; // automatic reconnect attempts since the last time we were online
   retryAt?: number; // epoch ms of the next automatic attempt or resend
   waitReason?: WaitReason;
   refusal?: Refusal;
   offline: boolean; // the browser says the network is down
   persistent: boolean; // false: credentials live in memory only, a reload loses the character
+  staff: boolean; // signed in with a password (the GM); reconnects sign in again from memory
 }
 
 export type ConnEvent =
@@ -71,6 +73,7 @@ export interface ConnectionOptions {
 type Request =
   | { kind: 'join'; name: string }
   | { kind: 'recover'; name: string; code: string }
+  | { kind: 'login'; name: string; password: string; relogin: boolean } // staff; relogin: after a drop
   | { kind: 'resume' };
 
 const OPEN = 1;
@@ -89,7 +92,7 @@ export function createConnection(opts: ConnectionOptions) {
   const random = opts.random ?? Math.random;
   const now = opts.now ?? Date.now;
 
-  let state: ConnState = { phase: 'landing', attempt: 0, offline: false, persistent: store.persistent };
+  let state: ConnState = { phase: 'landing', attempt: 0, offline: false, persistent: store.persistent, staff: false };
   const listeners = new Set<(e: ConnEvent) => void>();
 
   let sock: SocketLike | null = null;
@@ -100,6 +103,9 @@ export function createConnection(opts: ConnectionOptions) {
   let haveCount = false; // false on a freshly loaded page: resume without a count
   let replayLeft = 0;
   let afterRestart = false;
+  // The staff password lives only in this variable, never in storage: a dropped connection signs in
+  // again from it, a page reload asks for it again.
+  let staffCreds: { name: string; password: string } | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let replyTimer: ReturnType<typeof setTimeout> | null = null; // armed while waiting for a connect or an auth reply
 
@@ -158,6 +164,7 @@ export function createConnection(opts: ConnectionOptions) {
     if (!sock || !pending) return;
     if (pending.kind === 'join') sock.send(joinFrame(pending.name));
     else if (pending.kind === 'recover') sock.send(recoverFrame(pending.name, pending.code));
+    else if (pending.kind === 'login') sock.send(loginFrame(pending.name, pending.password));
     else {
       const token = store.getToken();
       if (token) sock.send(resumeFrame(token, haveCount ? count : undefined));
@@ -191,12 +198,12 @@ export function createConnection(opts: ConnectionOptions) {
     s.onerror = () => {}; // a close always follows
   };
 
-  const end = (reason: EndReason) => {
+  const end = (reason: EndReason, message?: string) => {
     clearTimer();
     pending = null;
     admitted = false;
     dropSocket();
-    setState({ phase: 'ended', endReason: reason, retryAt: undefined, waitReason: undefined });
+    setState({ phase: 'ended', endReason: reason, endMessage: message, retryAt: undefined, waitReason: undefined });
   };
 
   const scheduleReconnect = (why: WaitReason, immediate = false) => {
@@ -210,6 +217,12 @@ export function createConnection(opts: ConnectionOptions) {
   };
 
   const connectResume = () => {
+    if (staffCreds) {
+      // A staff session has no token: sign in again with what the page remembers.
+      setState({ phase: 'resuming' });
+      request({ kind: 'login', ...staffCreds, relogin: true });
+      return;
+    }
     if (!store.getToken()) {
       setState({ phase: 'landing', waitReason: undefined });
       return;
@@ -228,6 +241,7 @@ export function createConnection(opts: ConnectionOptions) {
       case 'joining':
       case 'recovering':
         // We may have sent the join and lost the reply; there is nothing to resume.
+        staffCreds = null;
         pending = null;
         admitted = false;
         clearTimer();
@@ -251,12 +265,19 @@ export function createConnection(opts: ConnectionOptions) {
     count = f.base ?? 0; // the count before any replayed frames; they are counted as they arrive
     replayLeft = f.replayed;
     clearTimer();
-    if (req.kind !== 'resume' && f.token) {
+    if ((req.kind === 'join' || req.kind === 'recover') && f.token) {
       store.saveSession(f.token, req.name);
       if (f.recovery) store.saveRecovery(f.recovery);
     }
-    setState({ phase: 'online', attempt: 0, retryAt: undefined, waitReason: undefined, refusal: undefined, endReason: undefined });
-    emit({ type: 'welcome', resumed: f.resumed, gap: f.gap, replayed: f.replayed, message: f.message, recovery: req.kind === 'resume' ? undefined : f.recovery });
+    const relogin = req.kind === 'login' && req.relogin; // a password account has no replay: what came meanwhile is lost
+    setState({
+      phase: 'online', attempt: 0, retryAt: undefined, waitReason: undefined, refusal: undefined, endReason: undefined,
+      endMessage: undefined, staff: req.kind === 'login',
+    });
+    emit({
+      type: 'welcome', resumed: relogin || f.resumed, gap: relogin || f.gap, replayed: f.replayed, message: f.message,
+      recovery: req.kind === 'join' || req.kind === 'recover' ? f.recovery : undefined,
+    });
   };
 
   const refuse = (f: AuthFrame) => {
@@ -264,17 +285,31 @@ export function createConnection(opts: ConnectionOptions) {
     const req = pending;
     if (!req) return;
     const code = f.code ?? 'failed';
-    if (req.kind === 'resume') {
-      if (code === 'bad_token') {
+    const relogin = req.kind === 'login' && req.relogin;
+    if (req.kind === 'resume' || relogin) {
+      if (code === 'kicked') {
+        end('kicked', f.message); // on a break: stop, keep the token, a tap asks again
+        return;
+      }
+      if (req.kind === 'resume' && code === 'bad_token') {
         store.clearToken();
         end('bad_token');
         return;
       }
-      // Capacity, a busy character, an internal error: try again later.
+      if (relogin && (code === 'bad_password' || code === 'unknown_user')) {
+        // The credentials no longer work (changed on the host): back to the sign-in form.
+        staffCreds = null;
+        pending = null;
+        dropSocket();
+        setState({ phase: 'landing', staff: false, waitReason: undefined, refusal: { code, message: f.message } });
+        return;
+      }
+      // Capacity, a busy character (the old session is still being cleared), an internal error: try again later.
       dropSocket();
       scheduleReconnect(code === 'at_capacity' ? 'at_capacity' : 'busy');
       return;
     }
+    if (req.kind === 'login') staffCreds = null;
     pending = null;
     setState({
       phase: 'landing', waitReason: undefined,
@@ -290,6 +325,8 @@ export function createConnection(opts: ConnectionOptions) {
         return end('replaced');
       case 'bad_version':
         return end('bad_version');
+      case 'kicked':
+        return end('kicked', f.message);
       case 'restarting':
         afterRestart = true; // the close follows; come back with the wide jitter
         return;
@@ -351,6 +388,15 @@ export function createConnection(opts: ConnectionOptions) {
       }
     },
 
+    // login is the staff sign-in (the GM, at /staff). The password stays in memory so that a dropped
+    // connection can sign in again by itself; it is never stored.
+    login(name: string, password: string) {
+      if (admitted) return;
+      staffCreds = { name, password };
+      setState({ phase: 'joining', refusal: undefined, waitReason: undefined });
+      request({ kind: 'login', name, password, relogin: false });
+    },
+
     join(name: string) {
       if (admitted) return;
       setState({ phase: 'joining', refusal: undefined, waitReason: undefined });
@@ -407,6 +453,7 @@ export function createConnection(opts: ConnectionOptions) {
     },
 
     dispose() {
+      staffCreds = null;
       clearTimer();
       pending = null;
       dropSocket();

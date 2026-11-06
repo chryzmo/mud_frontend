@@ -24,8 +24,9 @@ non-trivial work, and update its checklist and log when work lands.
 
 - `src/App.tsx`: picks the screen from the connection's phase. `src/session.ts` wires storage, connection, game state and
   the browser signals for the page (`getSession()`); `src/useSession.ts` has the React hooks.
-- `src/screens/`: `Landing` (join, recover), `RecoveryCode` (cannot be skipped), `Ended` (idle, replaced, bad version),
-  `Game`.
+- `src/screens/`: `Landing` (join, recover), `RecoveryCode` (cannot be skipped), `Ended` (idle, replaced, kicked, bad version),
+  `Game`, and `StaffLogin` (the hidden `/staff` sign-in for the game master). `src/components/GMPanel.tsx` is the
+  GM's phone panel (buttons that send `GM ...` commands).
 - `src/net/`: the new connection layer (no React). `frames.ts` parses and builds frames; `connection.ts` is the session
   state machine (join, resume, recover, reconnect, terminal states, frame counting); `backoff.ts`, `storage.ts`.
   `testdata/transcripts.json` is the server's recorded wire behaviour, replayed by `transcripts.test.ts`.
@@ -85,7 +86,8 @@ scripts/test.sh    # type check + tests + production build
 
 - The socket opens with the subprotocol `mud.v1` (the protocol version). Every frame, both ways, is a
   flat JSON object with a type `t`; all of it lives in `src/net/frames.ts`.
-- Client to server: `cmd {line}`, `join {name}`, `resume {token, received?}`, `recover {name, code}`.
+- Client to server: `cmd {line}`, `join {name}`, `resume {token, received?}`, `recover {name, code}`, and `login {username, password}`
+  for the game master only (the `/staff` page; the password stays in memory and a drop signs in again from it).
 - Server to client: `hello`, `auth`, `text`, `say`, `arrive`, `leave`, `whisper`, `stats`, `room`, `inventory`,
   `error`. `src/game/entries.ts` words and styles the events; `text` still carries ANSI colour codes
   (red = NPC, blue = player, green = item), styled per line by `textLines`.
@@ -121,11 +123,13 @@ has the reasoning.
   `restarting` means the server is going down: reconnect with jitter. `at_capacity`: say so and retry.
 - **Some closes are not reconnects.** After an `idle` error, stop and show "you were away" with a tap to
   rejoin; a client that reconnects by itself takes its slot straight back. Likewise stop on `replaced` (another tab or
-  device took the character; a tap takes it back), `bad_token` (the stored token is dropped, the name kept for
+  device took the character; a tap takes it back), `kicked` (a GM sent the character on a break: say so with the
+  server's words; a tap asks again and is refused until it is over), `bad_token` (the stored token is dropped, the name kept for
   recovery) and `bad_version` (the page is stale: reload it).
-- **Codes arrive in two frame types.** `error` carries `rate_limited`, `idle`, `replaced`, `restarting`, `bad_version`;
-  an `auth` with `ok:false` carries `bad_token`, `at_capacity`, `invalid_name`, `name_taken`, `bad_recovery`,
-  `recovery_locked`. Handle a code in the frame type it arrives in.
+- **Codes arrive in two frame types.** `error` carries `rate_limited`, `idle`, `replaced`, `kicked`, `restarting`,
+  `bad_version`; an `auth` with `ok:false` carries `bad_token`, `at_capacity`, `invalid_name`, `name_taken`,
+  `bad_recovery`, `recovery_locked`, `kicked` (a resume, recover or login during a GM's break; terminal, the token is
+  kept), `joins_locked`, and for staff `bad_password`, `unknown_user`, `name_online`. Handle a code in the frame type it arrives in.
 - **Recover.** `recover {name, code}` (any case, dashes optional) returns a *new* token and a *new* recovery
   code: replace both and show the code again. `recovery_locked` carries `retry_ms`; show the wait.
 - **Do not trust the client for secrets or limits.** Nothing in the page is authoritative: the server
@@ -153,6 +157,9 @@ npx playwright install chromium   # once per machine
   `@playwright/test`) to get a `net` fixture: `net.cut()` drops this browser's connection, `net.block()` / `net.unblock()`
   make an outage. Each browser context is tagged by a cookie, so one test never cuts another's connection.
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
+- Staff tests sign in as seeded GM accounts (`e2e/global-setup.ts` creates `e2egmone`..`e2egmthree` after the server is up;
+  one account per test, since the server allows one session per account and tests run in parallel). Never use `GM LOCK` in
+  an e2e test: it would stop other tests joining. These tests need a server with the GM commands (`mud_server` main).
 - The compass and stats hide while the input has focus *and* the visible height is under 420px (keyboard up on a
   short screen); on taller screens they stay. Blur the input before using them to be safe.
 - Never point these at production. A live smoke test is a manual, owner-authorized step: `scripts/smoke-live.sh https://<site>`
