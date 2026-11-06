@@ -1,181 +1,250 @@
-body {
-  background-color: skyblue;
+/* Layout tokens. The app is sized from the visible viewport (--app-height, --app-top,
+   set from visualViewport) so the on-screen keyboard cannot cover the input. */
+:root {
+  --bg: #e9eef5;
+  --panel: #ffffff;
+  --ink: #1b1f24;
+  --muted: #5b6573;
+  --line: #b7c0cc;
+  --accent: #3a6aa8;
+  --tap: 44px; /* minimum touch target */
+  --gap: 8px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
   margin: 0;
-  height: 100vh;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
-  height: 100vh;
+  position: fixed;
+  top: var(--app-top, 0);
+  left: 0;
+  right: 0;
+  height: var(--app-height, 100dvh);
   display: flex;
   flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-#container {
+#game {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
 }
 
 #header {
-  height: 30px;
   flex-shrink: 0;
+  padding: 6px var(--gap);
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+/* The log */
 #chatdiv {
+  position: relative;
   flex: 1;
-  overflow: hidden;
-  border: 1px solid black;
-  border-radius: 10px;
   min-height: 0;
+  margin: 0 var(--gap);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  overflow: hidden;
 }
 
 #chatbox {
-  overflow-y: scroll;
-  padding: 5px;
   height: 100%;
-  background: ivory;
-  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 8px;
+  font-size: 16px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
-/* Bottom bar: nav buttons stacked above the input */
+.chatmessageclickable {
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.jump {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Everything under the log */
 #bottombar {
   flex-shrink: 0;
-  padding: 6px 8px;
-}
-
-/* Top row of the bottom bar: nav buttons on the left, stats on the right */
-#bottombar-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 6px;
-}
-
-/* Nav buttons */
-#navdiv {
-  flex-shrink: 0;
-}
-
-.navrow {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-.navbutton {
-  width: 40px;
-  height: 28px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 3px 3px rgba(0,0,0,0.4);
-}
-
-.navbutton-inactive {
-  opacity: 0.3;
-  cursor: default;
-  box-shadow: none;
-}
-
-.navbutton:not(.navbutton-inactive):hover {
-  background-color: #b8bbc2;
-}
-
-/* Stats bar */
-#statsbar {
+  padding: 6px var(--gap) 8px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 0.85rem;
-  font-family: monospace;
-}
-
-.stat-row {
-  display: flex;
   gap: 6px;
-  align-items: baseline;
 }
 
-.stat-label {
-  width: 30px;
-  font-weight: bold;
-  color: #444;
+#statsbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  min-height: 1.3em;
+  font-size: 0.85rem;
+  font-family: ui-monospace, Menlo, monospace;
 }
 
-.stat-value {
-  min-width: 60px;
-}
-
+.stat-row { display: flex; gap: 4px; align-items: baseline; }
+.stat-label { font-weight: bold; color: var(--muted); }
 .hp-value { color: #c0392b; }
 .mp-value { color: #2980b9; }
+.stat-boosted { font-weight: bold; color: #b8860b; }
 
-.stat-boosted {
-  font-weight: bold;
-  color: #d4ac0d;
-}
-
-/* Input bar */
-#inputdiv {
-  width: 100%;
-}
-
-#inputform {
+/* Compass on the left, quick actions on the right */
+#controls {
   display: flex;
-  gap: 6px;
+  gap: 12px;
+  align-items: stretch;
 }
 
-#messageBox {
+#navdiv {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(3, var(--tap));
+  grid-auto-rows: var(--tap);
+  gap: 4px;
+}
+
+.navbutton { font-weight: bold; font-size: 1rem; }
+.navbutton-inactive { opacity: 0.3; }
+
+.quick {
   flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: var(--tap);
+  gap: 4px;
 }
 
-/* Coloured name spans */
-.npcNameSpan {
-  color: red;
+/* With the keyboard up there is no room for the pad: keep the log and the input. */
+#game.typing #controls,
+#game.typing #statsbar { display: none; }
+
+/* Input */
+#inputform { display: flex; gap: 6px; }
+#messageBox { flex: 1; min-width: 0; }
+#messageBox,
+#messageBtn {
+  min-height: var(--tap);
+  font-size: 16px; /* under 16px, iOS zooms the page on focus */
+}
+#messageBtn { padding: 0 16px; }
+
+button, input {
+  font-family: inherit;
 }
 
-.playerNameSpan {
-  color: blue;
+button {
+  min-height: var(--tap);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 1rem;
+  touch-action: manipulation;
+}
+button:active:not(:disabled) { background: #d6dde8; }
+input[type="text"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--panel);
+  color: var(--ink);
 }
 
-.itemNameSpan {
-  color: green;
+/* Coloured names */
+.npcNameSpan { color: #c62828; }
+.playerNameSpan { color: #1a4fd0; }
+.itemNameSpan { color: #1b7a2b; }
+.whisperText { color: #a21caf; }
+
+.statusline {
+  flex-shrink: 0;
+  background: #fff3cd;
+  border-bottom: 1px solid #d9c36c;
+  padding: 4px var(--gap);
+  font-size: 0.9rem;
 }
 
-.whisperText {
-  color: magenta;
+.noticeText { color: #8a6d00; font-style: italic; }
+
+.dividerText {
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.85rem;
+  border-top: 1px dashed var(--line);
+  margin: 6px 0;
+  padding-top: 4px;
 }
 
-/* Inventory modal */
-.inventorymodal {
-  background-color: #eee;
-  position: absolute;
-  border: 1px solid #555;
+/* Bottom sheets: the tapped name's actions, and the inventory */
+.sheet-backdrop {
+  position: fixed;
+  top: var(--app-top, 0);
   left: 0;
   right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  height: 25%;
-  top: 15%;
-  width: 25%;
+  height: var(--app-height, 100dvh);
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  z-index: 2000;
 }
 
-.inventorymodaltext:hover {
-  font-weight: bold;
+.sheet {
+  width: 100%;
+  max-height: 80%;
+  overflow-y: auto;
+  background: var(--panel);
+  border-radius: 14px 14px 0 0;
+  padding: 12px var(--gap) calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.chatmessageclickable:hover {
-  font-weight: bold;
-  cursor: pointer;
-}
+.sheet-title { font-weight: bold; text-align: center; padding-bottom: 4px; }
+.sheet-empty { text-align: center; color: var(--muted); padding: 8px; }
+.sheet-action { min-height: 48px; }
+.sheet-cancel { color: var(--muted); }
 
 /* ── Login / Register modal ─────────────────────────────────────────────── */
 #login-overlay {
   position: fixed;
-  inset: 0;
+  top: var(--app-top, 0);
+  left: 0;
+  right: 0;
+  height: var(--app-height, 100dvh);
+  overflow-y: auto;
   background: rgba(0, 0, 0, 0.65);
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   z-index: 1000;
 }
@@ -185,7 +254,8 @@ body {
   border: 2px solid #555;
   border-radius: 8px;
   padding: 32px 36px;
-  width: 340px;
+  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
   box-shadow: 8px 8px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
@@ -212,10 +282,10 @@ body {
 }
 
 .login-field input {
-  padding: 6px 8px;
+  padding: 10px 8px;
   border: 1px solid #999;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: 16px; /* under 16px, iOS zooms the page on focus */
   box-shadow: none;
 }
 
@@ -235,6 +305,7 @@ body {
 
 #login-submit-btn {
   width: 100%;
+  min-height: 44px;
   padding: 8px;
   font-size: 1rem;
   font-weight: bold;
@@ -246,10 +317,6 @@ body {
   box-shadow: 3px 3px rgba(0, 0, 0, 0.4);
 }
 
-#login-submit-btn:hover {
-  background: #3a6aa8;
-  font-weight: bold;
-}
 
 #login-secondary {
   display: flex;
@@ -271,25 +338,6 @@ body {
   text-decoration: underline;
 }
 
-.login-link-btn:hover {
-  color: #3a6aa8;
-  background: none;
-  font-weight: normal;
-}
-
-input, button {
-  box-shadow: 5px 5px rgba(0,0,0,0.5);
-  font-weight: normal;
-}
-
-input:active, button:active {
-  box-shadow: 3px 3px rgba(0,0,0,0.5);
-}
-
-button:hover {
-  background-color: #b8bbc2;
-  font-weight: bold;
-}
 
 /* Guest screens */
 .login-note {
@@ -331,23 +379,3 @@ button:hover {
   cursor: default;
 }
 
-.statusline {
-  background: #fff3cd;
-  border-bottom: 1px solid #d9c36c;
-  padding: 4px 8px;
-  font-size: 0.9rem;
-}
-
-.noticeText {
-  color: #8a6d00;
-  font-style: italic;
-}
-
-.dividerText {
-  color: #666;
-  text-align: center;
-  font-size: 0.85rem;
-  border-top: 1px dashed #999;
-  margin: 6px 0;
-  padding-top: 4px;
-}

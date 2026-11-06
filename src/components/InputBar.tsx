@@ -5,9 +5,10 @@ interface Props {
   setMessage: React.Dispatch<React.SetStateAction<string>>;
   inputRef: React.RefObject<HTMLInputElement>;
   onSend: (line: string) => void;
+  onFocusChange?: (focused: boolean) => void;
 }
 
-const InputBar: FC<Props> = ({ message, setMessage, inputRef, onSend }): ReactElement => {
+const InputBar: FC<Props> = ({ message, setMessage, inputRef, onSend, onFocusChange }): ReactElement => {
   const history = useRef<string[]>([]);
   const historyIndex = useRef<number>(-1);
   const draft = useRef<string>("");
@@ -66,9 +67,17 @@ const InputBar: FC<Props> = ({ message, setMessage, inputRef, onSend }): ReactEl
             setMessage(e.target.value);
           }}
           onKeyDown={handleKeyDown}
-          onFocus={handleMessageBoxFocus}
+          onFocus={(e) => {
+            handleMessageBoxFocus(e);
+            onFocusChange?.(true);
+          }}
+          onBlur={() => onFocusChange?.(false)}
+          enterKeyHint="send"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
         />
-        <button id="messageBtn">Send</button>
+        <button id="messageBtn" onPointerDown={(e) => e.preventDefault()}>Send</button>
       </form>
     </div>
   );

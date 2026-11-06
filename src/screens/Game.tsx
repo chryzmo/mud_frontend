@@ -1,14 +1,15 @@
-import { FC, ReactElement, useEffect, useRef, useState } from 'react';
-import Chatbox from '../components/Chatbox';
+import { FC, ReactElement, useCallback, useEffect, useRef, useState } from 'react';
+import ActionSheet, { SheetAction } from '../components/ActionSheet';
+import Chatbox, { Target } from '../components/Chatbox';
 import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import { InventoryModal } from '../components/InventoryModal';
 import NavButtons from '../components/NavButtons';
+import QuickActions from '../components/QuickActions';
 import StatsBar from '../components/StatsBar';
-import { GameStore } from '../game/store';
 import { ConnState } from '../net/connection';
-import { useGameState } from '../useSession';
 import { Session } from '../session';
+import { useGameState } from '../useSession';
 
 interface Props {
   session: Session;
@@ -27,12 +28,46 @@ export function statusText(conn: ConnState): string {
   return '';
 }
 
+interface Sheet {
+  title: string;
+  actions: SheetAction[];
+}
+
 const Game: FC<Props> = ({ session, conn }): ReactElement => {
-  const game: GameStore = session.game;
+  const game = session.game;
   const state = useGameState(session);
   const [message, setMessage] = useState('');
+  const [typing, setTyping] = useState(false); // the keyboard is up: give the log the room
+  const [sheet, setSheet] = useState<Sheet | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const status = statusText(conn);
+
+  const send = useCallback((line: string) => game.send(line), [game]);
+  const fill = (text: string) => {
+    setMessage(text);
+    inputRef.current?.focus();
+  };
+
+  // A tapped name opens the things you can do with it. Whispering needs words, so it
+  // fills the input; the rest go straight out.
+  const choose = (t: Target) => {
+    const actions: SheetAction[] =
+      t.kind === 'player' ? [{ label: 'Whisper', run: () => fill(`WHISPER ${t.name} `) }]
+      : t.kind === 'npc' ? [{ label: 'Attack', run: () => send(`ATTACK ${t.name}`) }]
+      : [{ label: 'Pick up', run: () => send(`GET ${t.name}`) }];
+    setSheet({ title: t.name, actions });
+  };
+
+  const chooseItem = (name: string) => {
+    game.dispatch({ type: 'closeInventory' });
+    setSheet({
+      title: name,
+      actions: [
+        { label: 'Equip', run: () => send(`EQUIP ${name}`) },
+        { label: 'Drop', run: () => send(`DROP ${name}`) },
+      ],
+    });
+  };
 
   // ENTER focuses the input if it isn't already focused.
   useEffect(() => {
@@ -47,34 +82,35 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   }, []);
 
   return (
-    <>
+    <div id="game" className={typing ? 'typing' : ''}>
       <Header title={state.room ? state.room.name : 'MUD Client'} />
       {status && <div className="statusline" role="status">{status}</div>}
-      <div id="container">
-        <Chatbox entries={state.log} setMessage={setMessage} />
-        <div id="bottombar">
-          <div id="bottombar-top">
-            <NavButtons exits={state.room?.exits ?? []} onNavigate={(dir) => game.send('MOVE ' + dir)} />
-            <StatsBar stats={state.stats} />
-          </div>
-          <InputBar
-            message={message}
-            setMessage={setMessage}
-            inputRef={inputRef}
-            onSend={(line) => {
-              game.send(line);
-              setMessage('');
-            }}
-          />
+      <Chatbox entries={state.log} onSelect={choose} />
+      <div id="bottombar">
+        <StatsBar stats={state.stats} />
+        <div id="controls">
+          <NavButtons exits={state.room?.exits ?? []} onNavigate={(dir) => send('MOVE ' + dir)} />
+          <QuickActions onCommand={send} />
         </div>
-        <InventoryModal
-          msgText={state.inventory ?? ''}
-          isShown={state.inventory !== null}
+        <InputBar
+          message={message}
           setMessage={setMessage}
-          hide={() => game.dispatch({ type: 'closeInventory' })}
+          inputRef={inputRef}
+          onFocusChange={setTyping}
+          onSend={(line) => {
+            send(line);
+            setMessage('');
+          }}
         />
       </div>
-    </>
+      <InventoryModal
+        msgText={state.inventory ?? ''}
+        isShown={state.inventory !== null}
+        onItem={chooseItem}
+        hide={() => game.dispatch({ type: 'closeInventory' })}
+      />
+      {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
+    </div>
   );
 };
 

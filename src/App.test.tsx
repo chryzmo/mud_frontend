@@ -147,6 +147,54 @@ describe('playing', () => {
     expect(box).toHaveValue('');
   });
 
+  it('opens an action sheet for a tapped name and sends the chosen action', () => {
+    playing();
+    deliver({ t: 'text', text: '\x1b[1;31mGrak\x1b[0m snarls at you.\n\x1b[1;32msword\x1b[0m lies here.' });
+    fireEvent.click(screen.getByText('Grak'));
+    fireEvent.click(screen.getByRole('button', { name: 'Attack' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'ATTACK Grak' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByText('sword'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pick up' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET sword' });
+  });
+
+  it('whispering from the sheet fills the input instead of sending', () => {
+    playing();
+    deliver({ t: 'say', who: 'bob', text: 'hi' });
+    fireEvent.click(screen.getByText('bob'));
+    const sent = sock().sent.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Whisper' }));
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('WHISPER bob ');
+    expect(sock().sent).toHaveLength(sent);
+  });
+
+  it('sends the quick actions in one tap', () => {
+    playing();
+    fireEvent.click(screen.getByRole('button', { name: 'Look' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'LOOK' });
+    fireEvent.click(screen.getByRole('button', { name: 'Items' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'INVENTORY' });
+  });
+
+  it('lets the player equip or drop an item from the inventory sheet', () => {
+    playing();
+    deliver({ t: 'inventory', text: 'Your inventory contains:\n\n\x1b[1;32m2x rusty sword\x1b[0m\n' });
+    fireEvent.click(screen.getByRole('button', { name: '2x rusty sword' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Drop' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'DROP rusty sword' });
+  });
+
+  it('gives the log the room while the keyboard is up', () => {
+    playing();
+    const box = screen.getByPlaceholderText('What would you like to do..?');
+    fireEvent.focus(box);
+    expect(document.getElementById('game')).toHaveClass('typing');
+    fireEvent.blur(box);
+    expect(document.getElementById('game')).not.toHaveClass('typing');
+  });
+
   it('shows the inventory reply', () => {
     playing();
     deliver({ t: 'inventory', text: 'Your inventory is empty.' });
