@@ -207,3 +207,44 @@ describe('sessions that end', () => {
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
   });
 });
+
+describe('copying the recovery code', () => {
+  const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+  afterEach(() => {
+    if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard);
+    else delete (navigator as unknown as Record<string, unknown>).clipboard;
+    delete (document as unknown as Record<string, unknown>).execCommand;
+  });
+  const showCode = () => mount({ 'mud.token': 'T', 'mud.name': 'Alice', 'mud.recovery': 'ABCD-EFGH-JKLM' });
+
+  it('uses the clipboard API when the page has it', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    showCode();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(writeText).toHaveBeenCalledWith('ABCD-EFGH-JKLM');
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+  });
+
+  it('falls back to the copy command on a page without the clipboard API (plain http)', async () => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    let copied = '';
+    document.execCommand = vi.fn(() => {
+      copied = document.querySelector('textarea')!.value;
+      return true;
+    });
+    showCode();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
+    expect(copied).toBe('ABCD-EFGH-JKLM');
+    expect(document.querySelector('textarea')).toBeNull(); // the helper field is removed
+  });
+
+  it('says so when nothing can copy', async () => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    document.execCommand = vi.fn(() => false);
+    showCode();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(await screen.findByText(/Could not copy/)).toBeInTheDocument();
+  });
+});
