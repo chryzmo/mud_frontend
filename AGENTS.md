@@ -33,7 +33,7 @@ non-trivial work, and update its checklist and log when work lands.
   reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
-- `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
+- `e2e/`: Playwright tests and their server launcher (see End-to-end tests). `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
 - `src/index.css`: all styling (`src/css/App.css` is empty).
 
 ## Build and run
@@ -131,6 +131,27 @@ has the reasoning.
 - **Do not trust the client for secrets or limits.** Nothing in the page is authoritative: the server
   rate-limits, validates names and decides who a token belongs to.
 - **Do not register.** `register` and `login` are for GM accounts and are going away.
+
+## End-to-end tests (Playwright)
+
+`e2e/*.spec.ts` drive a real browser (a phone-sized Chromium; WebKit too when `E2E_WEBKIT=1`) against the production
+build and a real `mud_server` with Postgres. `playwright.config.ts` starts both: `e2e/server.mjs` reseeds the database
+from `../mud_server/src/sql`, builds and runs the Go server on :18080, and `vite preview` serves the build on :4173
+with `/ws` proxied to it.
+
+```sh
+scripts/e2e.sh                 # needs ../mud_server (or MUD_SERVER_DIR), Go, and its Postgres (db.sh up)
+scripts/e2e.sh -g "recover"    # extra arguments go to Playwright
+npx playwright install chromium   # once per machine
+```
+
+- The database is **dropped and reseeded** each run: by default the server's `mud_test`; set `E2E_DATABASE_URL` for
+  another. `server.mjs` refuses a database whose name does not end in `_test` or `_e2e`.
+- Select by role, label, placeholder or text (as the component tests do), not by CSS, so layout work does not break
+  them. Use `uniqueName()` for guests; tests run in parallel and the database is shared.
+- No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
+- The compass and stats hide while the input has focus (the keyboard is up); blur the input before using them.
+- Never point these at production. A live smoke test is a manual, owner-authorized step.
 
 ## Wire transcripts
 
