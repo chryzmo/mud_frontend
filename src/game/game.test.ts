@@ -109,6 +109,14 @@ describe('createGameStore', () => {
     expect(game.getState().log).toEqual([{ id: 1, kind: 'echo', text: 'SAY hello' }]);
   });
 
+  it('does not pretend a command went out while the connection is down', () => {
+    const { game, sock } = setup();
+    sock.drop(); // reconnecting: nothing can be sent
+    game.send('SAY anyone there');
+    expect(game.getState().log).toMatchObject([{ kind: 'notice', text: expect.stringContaining('Not connected') }]);
+    expect(game.getState().log.some((e) => e.kind === 'echo')).toBe(false);
+  });
+
   it('logs a server notice without ending the session', () => {
     const { conn, game, sock } = setup();
     sock.deliver({ t: 'error', code: 'rate_limited', message: 'Slow down.' });
