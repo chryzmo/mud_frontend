@@ -20,7 +20,7 @@ jobs:
       - run: scripts/test.sh
 
   # End-to-end: a real browser against this build and mud_server's main, with Postgres.
-  # Runs after the fast checks pass. It does not gate the deploy yet.
+  # Runs after the fast checks pass, and the deploy waits for it.
   e2e:
     needs: test
     runs-on: ubuntu-24.04
@@ -69,7 +69,7 @@ jobs:
           retention-days: 7
 
   deploy:
-    needs: test
+    needs: [test, e2e]
     if: github.event_name == 'push' && vars.AUTO_DEPLOY == 'true'
     uses: chryzmo/mud_server/.github/workflows/deploy.yml@main
     with:
