@@ -6,12 +6,16 @@ import { INPUT, confirmCode, joinAs, say, uniqueName } from '../e2e/helpers';
 test('the live site: join, play, drop the connection, resume, reload', async ({ page, context }) => {
   const errors: string[] = [];
   const sockets: string[] = [];
-  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  // Only our own page counts: Cloudflare injects an analytics beacon from another host, which
+  // can be blocked by a network or an ad blocker and logs an error that is not ours.
+  const ours = (url: string) => url === '' || new URL(url).host === new URL(page.url() === 'about:blank' ? 'https://x' : page.url()).host;
+  page.on('console', (m) => m.type() === 'error' && ours(m.location().url) && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
   page.on('websocket', (ws) => sockets.push(ws.url()));
 
   const started = Date.now();
   const name = uniqueName();
+  console.log(`guest name: ${name}`); // so the post-event purge can find it
   const code = await joinAs(page, name);
   expect(code).toMatch(/^[A-Z0-9]{4}(-[A-Z0-9]{4}){2,}$/);
   await confirmCode(page);
