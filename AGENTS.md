@@ -35,6 +35,7 @@ non-trivial work, and update its checklist and log when work lands.
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `leaderboard.html` + `src/leaderboard/` is the leaderboard page (a second Vite entry, no React, served at `/leaderboard.html`): `board.ts` parses `/api/leaderboard` and draws it with `textContent` only, `main.ts` refreshes every 10 s. The stats bar shows level and XP from the `stats` frame.
 - `src/cosmetics.ts` is the fixed set of name colours and badges a sticker can grant (the server's list is in `worldfile/codes.go`); `NameTag` draws a name with them and ignores any key not in the set, and `StickerSheet` (the Stickers quick action) redeems a code and picks what to wear. Colours are `--nc-*` tokens in `index.css`, contrast-tested in `theme.test.ts`.
+- `src/game/events.ts` reads the server's `events` frame (what is on now and what is next, as Unix milliseconds) and words it; `EventBar` is the one line under the header (it counts down on the device's clock, redrawn every 30 s, and draws nothing when no event is on or coming) and `EventsSheet` lists them with start times in the player's own zone.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
 - `e2e/`: Playwright tests and their server launcher (see End-to-end tests). `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
 - `src/index.css`: all styling (`src/css/App.css` is empty).

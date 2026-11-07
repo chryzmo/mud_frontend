@@ -9,6 +9,8 @@ import { InventoryModal } from '../components/InventoryModal';
 import NavButtons from '../components/NavButtons';
 import QuickActions from '../components/QuickActions';
 import StickerSheet from '../components/StickerSheet';
+import EventBar from '../components/EventBar';
+import EventsSheet from '../components/EventsSheet';
 import StatusLine from '../components/StatusLine';
 import StatsBar from '../components/StatsBar';
 import { ConnState } from '../net/connection';
@@ -60,6 +62,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [gmOpen, setGmOpen] = useState(false);
   const [stickersOpen, setStickersOpen] = useState(false);
+  const [eventsOpen, setEventsOpen] = useState(false);
   const [hideGlobal, setHideGlobal] = useState(readHidden);
   const gmName = useRef('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +181,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
       />
       <StatusLine conn={conn} onRetry={session.conn.retryNow} />
       {state.banner && <Banner id={state.banner.id} label={state.banner.label} text={state.banner.text} onDismiss={dismissBanner} />}
+      <EventBar schedule={state.events} onOpen={() => setEventsOpen(true)} />
       <Chatbox entries={visible} onSelect={choose} />
       <div id="bottombar">
         <StatsBar stats={state.stats} />
@@ -204,6 +208,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
       />
       {gmOpen && <GMPanel initialName={gmName.current} onName={(n) => { gmName.current = n; }} onCommand={send} onClose={() => setGmOpen(false)} />}
       {stickersOpen && <StickerSheet cosmetics={state.cosmetics} onCommand={send} onClose={() => setStickersOpen(false)} />}
+      {eventsOpen && <EventsSheet schedule={state.events} onClose={() => setEventsOpen(false)} />}
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
     </div>
   );
