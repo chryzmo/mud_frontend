@@ -184,6 +184,15 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET KEY' });
   });
 
+  it('opens the guide for the journal, a hint and the map', () => {
+    playing();
+    for (const [label, line] of [['Journal', 'JOURNAL'], ['Hint', 'HINT'], ['Map', 'MAP']]) {
+      fireEvent.click(screen.getByRole('button', { name: 'Guide' }));
+      fireEvent.click(screen.getByRole('button', { name: label }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line });
+    }
+  });
+
   it('offers Examine for names in the log and for items in the pack', () => {
     playing();
     deliver({ t: 'text', text: '\x1b[1;31mGrak\x1b[0m snarls at you.\n\x1b[1;32msword\x1b[0m lies here.' });

@@ -77,6 +77,16 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
     ];
     setSheet({ title: 'Here', actions: entries });
   };
+  // Orientation: what you have learned, a hint if you are stuck, and where you have been.
+  const showGuide = () =>
+    setSheet({
+      title: 'Guide',
+      actions: [
+        { label: 'Journal', run: () => send('JOURNAL') },
+        { label: 'Hint', run: () => send('HINT') },
+        { label: 'Map', run: () => send('MAP') },
+      ],
+    });
   const somethingHere = !!state.room && state.room.people.length + state.room.things.length + state.room.items.length > 0;
 
   const chooseItem = (name: string) => {
@@ -115,7 +125,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         <StatsBar stats={state.stats} />
         <div id="controls">
           <NavButtons exits={state.room?.exits ?? []} onNavigate={(dir) => send('MOVE ' + dir)} />
-          <QuickActions onCommand={send} onHere={somethingHere ? showHere : undefined} />
+          <QuickActions onCommand={send} onHere={somethingHere ? showHere : undefined} onGuide={showGuide} />
         </div>
         <InputBar
           message={message}
