@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 import { FakeSocket, MemoryKV, ThrowingKV } from './net/testSupport';
 import { createSession, Session } from './session';
+import { shortForm, SOCIALS } from './screens/Game';
 
 let sockets: FakeSocket[];
 let kv: MemoryKV;
@@ -265,6 +266,40 @@ describe('playing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Report' }));
     expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('REPORT bob ');
     expect(sock().sent).toHaveLength(sent);
+  });
+
+  it('offers socials, an emote and WHO from the Chat sheet, and maps /me to EMOTE', () => {
+    playing();
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Who is here' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'WHO' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Emote…' }));
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('EMOTE ');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Socials' }));
+    for (const v of SOCIALS) expect(screen.getByRole('button', { name: v.charAt(0) + v.slice(1).toLowerCase() })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Dance' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'DANCE' });
+
+    expect(shortForm('/me juggles lemons')).toBe('EMOTE juggles lemons');
+    expect(shortForm('/ME waves')).toBe('EMOTE waves');
+    expect(shortForm('/g hi')).toBe('GLOBAL hi');
+    expect(shortForm('/mean thing')).toBe('/mean thing'); // only "/me" followed by a space
+    expect(shortForm('LOOK')).toBe('LOOK');
+  });
+
+  it('waves at or ignores a player from their name sheet', () => {
+    playing();
+    deliver({ t: 'say', who: 'bob', text: 'hi' });
+    fireEvent.click(screen.getByText('bob'));
+    fireEvent.click(screen.getByRole('button', { name: 'Wave' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'WAVE bob' });
+    fireEvent.click(screen.getByText('bob'));
+    fireEvent.click(screen.getByRole('button', { name: 'Ignore' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'IGNORE bob' });
   });
 
   it('sends the quick actions in one tap', () => {

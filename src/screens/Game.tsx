@@ -46,6 +46,12 @@ function writeHidden(hidden: boolean) {
   }
 }
 
+// The social verbs the server knows (mud_server social.go), in the order the sheet lists them.
+export const SOCIALS = ['WAVE', 'BOW', 'CHEER', 'DANCE', 'HUG', 'SHRUG', 'NOD', 'LAUGH', 'CLAP', 'SALUTE', 'HIGHFIVE', 'FACEPALM'];
+
+// "/g hello" is GLOBAL hello and "/me waves" is EMOTE waves; everything else goes out as typed.
+export const shortForm = (line: string): string => line.replace(/^\/g\s+/i, 'GLOBAL ').replace(/^\/me\s+/i, 'EMOTE ');
+
 const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const game = session.game;
   const state = useGameState(session);
@@ -62,7 +68,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const cramped = typing && visibleHeight < CRAMPED_BELOW_PX;
 
   // "/g hello" is the short form of GLOBAL; everything else goes out as typed.
-  const send = useCallback((line: string) => game.send(line.replace(/^\/g\s+/i, 'GLOBAL ')), [game]);
+  const send = useCallback((line: string) => game.send(shortForm(line)), [game]);
   const dismissBanner = useCallback(() => game.dispatch({ type: 'dismissBanner' }), [game]);
   const visible = useMemo(() => (hideGlobal ? state.log.filter((e) => e.kind !== 'chat') : state.log), [state.log, hideGlobal]);
   const fill = (text: string) => {
@@ -75,7 +81,13 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const choose = (t: Target) => {
     const examine: SheetAction = { label: 'Examine', run: () => send(`EXAMINE ${t.name}`) };
     const actions: SheetAction[] =
-      t.kind === 'player' ? [{ label: 'Whisper', run: () => fill(`WHISPER ${t.name} `) }, examine, { label: 'Report', run: () => fill(`REPORT ${t.name} `) }]
+      t.kind === 'player' ? [
+          { label: 'Whisper', run: () => fill(`WHISPER ${t.name} `) },
+          { label: 'Wave', run: () => send(`WAVE ${t.name}`) },
+          examine,
+          { label: 'Ignore', run: () => send(`IGNORE ${t.name}`) },
+          { label: 'Report', run: () => fill(`REPORT ${t.name} `) },
+        ]
       : t.kind === 'npc' ? [{ label: 'Attack', run: () => send(`ATTACK ${t.name}`) }, examine]
       : [{ label: 'Pick up', run: () => send(`GET ${t.name}`) }, examine];
     setSheet({ title: t.name, actions });
@@ -111,12 +123,18 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         { label: 'Map', run: () => send('MAP') },
       ],
     });
+  // Ready-made socials: tap one to do it (aim it with WAVE <name> from the input, or from a name's sheet).
+  const showSocials = () =>
+    setSheet({ title: 'Socials', actions: SOCIALS.map((v) => ({ label: v.charAt(0) + v.slice(1).toLowerCase(), run: () => send(v) })) });
   // Global chat: talk to everyone, or hide it when it buries the room text.
   const showChat = () =>
     setSheet({
-      title: 'Global chat',
+      title: 'Talk',
       actions: [
         { label: 'Say to everyone', run: () => fill('GLOBAL ') },
+        { label: 'Emote…', run: () => fill('EMOTE ') },
+        { label: 'Socials', run: showSocials },
+        { label: 'Who is here', run: () => send('WHO') },
         {
           label: hideGlobal ? 'Show global chat' : 'Hide global chat',
           run: () => {
