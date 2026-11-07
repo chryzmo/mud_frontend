@@ -33,6 +33,7 @@ non-trivial work, and update its checklist and log when work lands.
 - `src/game/`: the game model (no React): `entries.ts` turns frames into log lines (ANSI colour included), `state.ts` is the
   reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
+- `src/cosmetics.ts` is the fixed set of name colours and badges a sticker can grant (the server's list is in `worldfile/codes.go`); `NameTag` draws a name with them and ignores any key not in the set, and `StickerSheet` (the Stickers quick action) redeems a code and picks what to wear. Colours are `--nc-*` tokens in `index.css`, contrast-tested in `theme.test.ts`.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
 - `e2e/`: Playwright tests and their server launcher (see End-to-end tests). `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
 - `src/index.css`: all styling (`src/css/App.css` is empty).

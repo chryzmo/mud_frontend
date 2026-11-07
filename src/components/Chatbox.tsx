@@ -1,5 +1,6 @@
 import { FC, ReactElement, memo, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Entry } from "../game/entries";
+import NameTag from "./NameTag";
 
 export interface Target {
   kind: 'player' | 'npc' | 'item';
@@ -43,7 +44,7 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
       case 'player':
         return (
           <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'player', name: e.playerName })}>
-            <span className="playerNameSpan">{e.playerName}</span>
+            <NameTag className="playerNameSpan" name={e.playerName} color={e.color} badge={e.badge} />
             <span className="playerActionText">{e.actionText}</span>
           </div>
         );
@@ -60,7 +61,7 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         return (
           <div className="chatText">
             <span className="chatTag">[Global] </span>
-            <span className={e.gm ? 'chatWho chatGM' : 'chatWho'}>{e.who}{e.gm ? ' (GM)' : ''}</span>
+            <NameTag className={e.gm ? 'chatWho chatGM' : 'chatWho'} name={e.who} color={e.color} badge={e.badge} suffix={e.gm ? ' (GM)' : ''} />
             {': ' + e.text}
           </div>
         );

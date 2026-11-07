@@ -8,10 +8,10 @@ export type EntryBody =
   | { kind: 'plain'; text: string }
   | { kind: 'spacer' }
   | { kind: 'combat'; npcName: string; actionText: string }
-  | { kind: 'player'; playerName: string; actionText: string }
+  | { kind: 'player'; playerName: string; actionText: string; color?: string; badge?: string }
   | { kind: 'item'; itemName: string; actionText: string }
   | { kind: 'whisper'; text: string }
-  | { kind: 'chat'; who: string; text: string; gm: boolean } // global chat
+  | { kind: 'chat'; who: string; text: string; gm: boolean; color?: string; badge?: string } // global chat
   | { kind: 'announce'; label: string; text: string }
   | { kind: 'echo'; text: string } // a command the player sent
   | { kind: 'notice'; text: string } // from the client: a slow-down, an unknown command
@@ -58,15 +58,15 @@ export function frameLines(frame: ServerFrame): EntryBody[] {
     case 'text':
       return textLines(frame.text);
     case 'say':
-      return [{ kind: 'player', playerName: frame.who, actionText: ` says: "${frame.text}"` }];
+      return [{ kind: 'player', playerName: frame.who, actionText: ` says: "${frame.text}"`, color: frame.color, badge: frame.badge }];
     case 'arrive':
       return [{
-        kind: 'player', playerName: frame.who,
+        kind: 'player', playerName: frame.who, color: frame.color, badge: frame.badge,
         actionText: frame.from ? ` has entered the room from the ${frame.from}.` : ' has appeared in the room.',
       }];
     case 'leave':
       return [{
-        kind: 'player', playerName: frame.who,
+        kind: 'player', playerName: frame.who, color: frame.color, badge: frame.badge,
         actionText: frame.to ? ` has left to the ${frame.to}.` : ' has poofed away.',
       }];
     case 'whisper':
@@ -75,7 +75,7 @@ export function frameLines(frame: ServerFrame): EntryBody[] {
         text: frame.out ? `You whisper to ${frame.who}, "${frame.text}"` : `${frame.who} whispers, "${frame.text}"`,
       }];
     case 'chat':
-      return [{ kind: 'chat', who: frame.who, text: frame.text, gm: frame.gm }];
+      return [{ kind: 'chat', who: frame.who, text: frame.text, gm: frame.gm, color: frame.color, badge: frame.badge }];
     case 'announce':
       return [{ kind: 'announce', label: frame.from === 'event' ? 'Event' : 'GM', text: frame.text }];
     default:
