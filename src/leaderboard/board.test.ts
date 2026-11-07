@@ -39,6 +39,11 @@ describe('parseBoard', () => {
 });
 
 describe('renderBoard', () => {
+  it('carries the name and tagline', () => {
+    const r = draw(parseBoard(sample)!);
+    expect(r.querySelector('h1')!.textContent).toBe('ConQuest leaderboard');
+    expect(r.querySelector('.brand-tagline')!.textContent).toBe('The Hall Between Worlds');
+  });
   it('lists each tab with its own score, level and the cosmetics the player chose', () => {
     const board = parseBoard(sample)!;
     const r = draw(board);

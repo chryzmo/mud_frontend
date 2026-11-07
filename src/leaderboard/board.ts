@@ -1,5 +1,6 @@
 // The leaderboard page: no React, just a few DOM calls, so it loads fast on a phone and on the projector.
 // Everything the server sends is put in with textContent, never as markup.
+import { NAME, TAGLINE } from '../brand';
 import { badgeGlyph, colorClass } from '../cosmetics';
 
 export interface Entry {
@@ -92,7 +93,8 @@ export interface View {
 // renderBoard draws the page into root, replacing what was there.
 export function renderBoard(root: HTMLElement, view: View, onTab: (t: TabKey) => void): void {
   root.replaceChildren();
-  root.append(el('h1', undefined, 'ConQuest leaderboard'));
+  root.append(el('h1', undefined, NAME + ' leaderboard'));
+  root.append(el('p', 'brand-tagline', TAGLINE));
 
   const tabs = el('div', 'tabs');
   tabs.setAttribute('role', 'tablist');

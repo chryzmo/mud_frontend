@@ -1,5 +1,6 @@
 import { FC, FormEvent, ReactElement, useState } from 'react';
 import { ConnState } from '../net/connection';
+import { NAME, TAGLINE } from '../brand';
 
 interface Props {
   conn: ConnState;
@@ -38,6 +39,10 @@ const Landing: FC<Props> = ({ conn, savedName, notice, startInRecover, onJoin, o
   return (
     <div id="login-overlay">
       <div id="login-card">
+        <div className="brand">
+          <div className="brand-name">{NAME}</div>
+          <div className="brand-tagline">{TAGLINE}</div>
+        </div>
         <h2 id="login-title">{recovering ? 'Recover your character' : 'Welcome to the MUD'}</h2>
         {notice && <div className="login-note">{notice}</div>}
         <form onSubmit={submit} autoComplete="off">

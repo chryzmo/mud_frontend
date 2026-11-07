@@ -44,6 +44,12 @@ describe('joining as a guest', () => {
     expect(screen.queryByLabelText(/password/i)).toBeNull();
   });
 
+  it('shows the name and tagline above the form', () => {
+    mount();
+    expect(screen.getByText('ConQuest')).toBeInTheDocument();
+    expect(screen.getByText('The Hall Between Worlds')).toBeInTheDocument();
+  });
+
   it('sends join, then holds the player on the recovery code until they confirm it', () => {
     mount();
     joinAs('Alice');
