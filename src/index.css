@@ -25,6 +25,7 @@
   --player: #1a4fd0;
   --item: #1b6b2b;
   --whisper: #9a1ab0;
+  --global: #0b6663;
   --hp: #b42318;
   --mp: #1d6fa5;
   --boost: #7a5b00;
@@ -58,6 +59,7 @@
     --player: #8ab4ff;
     --item: #7fd98f;
     --whisper: #e58cf5;
+    --global: #6fd6d0;
     --hp: #ff8f85;
     --mp: #7cc0ee;
     --boost: #f0c75e;
@@ -193,7 +195,7 @@ html, body {
 .quick {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr); /* seven buttons fit in the compass's three rows */
   grid-auto-rows: var(--tap);
   gap: 4px;
 }
@@ -239,6 +241,24 @@ input[type="text"] {
 .playerNameSpan { color: var(--player); }
 .itemNameSpan { color: var(--item); }
 .whisperText { color: var(--whisper); }
+.chatText { color: var(--global); }
+.chatWho { font-weight: bold; }
+.chatGM { text-decoration: underline; }
+.announceText { color: var(--warn-ink); background: var(--warn-bg); border-left: 3px solid var(--warn-line); padding: 2px 6px; }
+
+/* A GM or event announcement, over the log until dismissed. */
+.banner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gap);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border-bottom: 1px solid var(--warn-line);
+  padding: 6px var(--gap);
+}
+.banner-text { flex: 1; overflow-wrap: anywhere; }
+.banner-close { min-width: var(--tap); min-height: var(--tap); background: transparent; color: inherit; border: 0; font-size: 1.2rem; }
 
 .statusline {
   flex-shrink: 0;

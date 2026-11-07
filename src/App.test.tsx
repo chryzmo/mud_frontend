@@ -193,6 +193,45 @@ describe('playing', () => {
     }
   });
 
+  it('shows global chat and announcements, and sends /g as GLOBAL', () => {
+    playing();
+    deliver({ t: 'chat', who: 'Ann', text: 'hello world', ch: 'global' });
+    expect(screen.getByText('Ann')).toHaveClass('chatWho');
+    expect(screen.getByText(/: hello world/)).toBeInTheDocument();
+
+    deliver({ t: 'announce', text: 'Feast at nine', from: 'gm' });
+    const banner = screen.getByRole('status');
+    expect(banner).toHaveTextContent('GM: Feast at nine');
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss announcement' }));
+    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.getByText('[GM] Feast at nine')).toBeInTheDocument(); // still in the log
+
+    const box = screen.getByPlaceholderText('What would you like to do..?');
+    fireEvent.input(box, { target: { value: '/g anyone here?' } });
+    fireEvent.submit(box.closest('form')!);
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GLOBAL anyone here?' });
+  });
+
+  it('can hide global chat and remembers the choice', () => {
+    window.localStorage.removeItem('mud.hideGlobal');
+    playing();
+    deliver({ t: 'chat', who: 'Ann', text: 'noise', ch: 'global' });
+    deliver({ t: 'say', who: 'Bob', text: 'room talk' });
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide global chat' }));
+    expect(screen.queryByText(/: noise/)).toBeNull();
+    expect(screen.getByText(/room talk/)).toBeInTheDocument(); // the room is unaffected
+    expect(window.localStorage.getItem('mud.hideGlobal')).toBe('1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Show global chat' }));
+    expect(screen.getByText(/: noise/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Chat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Say to everyone' }));
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('GLOBAL ');
+    window.localStorage.removeItem('mud.hideGlobal');
+  });
+
   it('offers Examine for names in the log and for items in the pack', () => {
     playing();
     deliver({ t: 'text', text: '\x1b[1;31mGrak\x1b[0m snarls at you.\n\x1b[1;32msword\x1b[0m lies here.' });
@@ -458,6 +497,11 @@ describe('the game master', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Who is here' }));
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GM WHO' });
+    for (const [label, line] of [['Chat off', 'GM CHAT OFF'], ['Chat on', 'GM CHAT ON'], ['Slow 30 s', 'GM SLOW 30'], ['Slow off', 'GM SLOW 0']]) {
+      fireEvent.click(screen.getByRole('button', { name: 'GM' }));
+      fireEvent.click(screen.getByRole('button', { name: label }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line });
+    }
     expect(screen.queryByRole('dialog')).toBeNull(); // the answer is in the log
 
     fireEvent.click(screen.getByRole('button', { name: 'GM' }));

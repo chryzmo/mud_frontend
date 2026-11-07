@@ -56,6 +56,16 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         );
       case 'whisper':
         return <div className="whisperText">{e.text}</div>;
+      case 'chat':
+        return (
+          <div className="chatText">
+            <span className="chatTag">[Global] </span>
+            <span className={e.gm ? 'chatWho chatGM' : 'chatWho'}>{e.who}{e.gm ? ' (GM)' : ''}</span>
+            {': ' + e.text}
+          </div>
+        );
+      case 'announce':
+        return <div className="announceText">{`[${e.label}] ${e.text}`}</div>;
     }
 });
 

@@ -6,6 +6,8 @@ interface Props {
   onHere?: () => void;
   // Opens JOURNAL, HINT and MAP.
   onGuide?: () => void;
+  // Opens global chat: say something to everyone, or hide the channel.
+  onChat?: () => void;
 }
 
 const ACTIONS: [string, string][] = [
@@ -16,10 +18,11 @@ const ACTIONS: [string, string][] = [
 ];
 
 // The commands a player reaches for most, one tap each.
-const QuickActions: FC<Props> = ({ onCommand, onHere, onGuide }): ReactElement => (
+const QuickActions: FC<Props> = ({ onCommand, onHere, onGuide, onChat }): ReactElement => (
   <div className="quick">
     {onHere && <button type="button" className="quick-btn" onClick={onHere}>Here</button>}
     {onGuide && <button type="button" className="quick-btn" onClick={onGuide}>Guide</button>}
+    {onChat && <button type="button" className="quick-btn" onClick={onChat}>Chat</button>}
     {ACTIONS.map(([label, line]) => (
       <button key={line} type="button" className="quick-btn" onClick={() => onCommand(line)}>{label}</button>
     ))}

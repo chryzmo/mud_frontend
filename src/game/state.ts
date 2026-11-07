@@ -22,6 +22,8 @@ export interface GameState {
   stats: Stats | null;
   // The text of the last INVENTORY reply, until the player closes it.
   inventory: string | null;
+  // The latest announcement from the GM or an event, until it is dismissed or replaced.
+  banner: { id: number; label: string; text: string } | null;
 }
 
 export type GameAction =
@@ -31,9 +33,10 @@ export type GameAction =
   | { type: 'welcome'; resumed: boolean; gap: boolean }
   | { type: 'echo'; line: string }
   | { type: 'notice'; message: string }
-  | { type: 'closeInventory' };
+  | { type: 'closeInventory' }
+  | { type: 'dismissBanner' };
 
-export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null });
+export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null, banner: null });
 
 const GAP_TEXT = 'You were disconnected for a while. Some messages may have been missed.';
 
@@ -56,6 +59,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
       return append(state, [{ kind: 'echo', text: action.line }]);
     case 'notice':
       return append(state, [{ kind: 'notice', text: action.message }]);
+    case 'dismissBanner':
+      return state.banner === null ? state : { ...state, banner: null };
     case 'closeInventory':
       return state.inventory === null ? state : { ...state, inventory: null };
     case 'frame': {
@@ -67,6 +72,11 @@ export function reduce(state: GameState, action: GameAction): GameState {
           return { ...state, room: { name: f.name, exits: f.exits, locked: f.locked, things: f.things, people: f.people, items: f.items } };
         case 'inventory':
           return { ...state, inventory: f.text };
+        case 'announce': {
+          const lines = frameLines(f);
+          const next = append(state, lines);
+          return { ...next, banner: { id: state.nextId, label: lines[0].kind === 'announce' ? lines[0].label : 'GM', text: f.text } };
+        }
         default:
           return append(state, frameLines(f));
       }
