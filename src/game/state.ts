@@ -2,6 +2,7 @@
 // text. A pure reducer; nothing here touches the socket or React.
 import { RoomItem, RoomThing, ServerFrame, Stats } from '../net/frames';
 import { Cosmetics } from '../cosmetics';
+import { Schedule } from './events';
 import { Entry, EntryBody, frameLines } from './entries';
 
 // A long session must not grow the page without bound: the oldest lines go first.
@@ -27,6 +28,8 @@ export interface GameState {
   banner: { id: number; label: string; text: string } | null;
   // What this player owns and wears; null until the server says they own something.
   cosmetics: Cosmetics | null;
+  // The event schedule; null until the server sends one (a world with no events never does).
+  events: Schedule | null;
 }
 
 export type GameAction =
@@ -39,7 +42,7 @@ export type GameAction =
   | { type: 'closeInventory' }
   | { type: 'dismissBanner' };
 
-export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null, banner: null, cosmetics: null });
+export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null, banner: null, cosmetics: null, events: null });
 
 const GAP_TEXT = 'You were disconnected for a while. Some messages may have been missed.';
 
@@ -75,6 +78,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           return { ...state, room: { name: f.name, exits: f.exits, locked: f.locked, things: f.things, people: f.people, items: f.items } };
         case 'inventory':
           return { ...state, inventory: f.text };
+        case 'events':
+          return { ...state, events: { now: f.now, next: f.next } };
         case 'cosmetics':
           return { ...state, cosmetics: { colors: f.colors, badges: f.badges, color: f.color, badge: f.badge } };
         case 'announce': {

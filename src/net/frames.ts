@@ -52,6 +52,8 @@ export type ServerFrame =
   | { t: 'room'; name: string; exits: string[]; locked: string[]; things: RoomThing[]; people: RoomThing[]; items: RoomItem[] }
   | { t: 'inventory'; text: string }
   // The player's own unlocked cosmetics and the ones worn; absent until they own any.
+  // The schedule: what is on now and what is next, as Unix milliseconds.
+  | { t: 'events'; now: { title: string; ends: number }[]; next: { title: string; at: number }[] }
   | { t: 'cosmetics'; colors: string[]; badges: string[]; color?: string; badge?: string }
   // A type this client does not know (a later phase's frame). It still counts.
   | { t: 'unknown'; type: string };
@@ -126,6 +128,12 @@ export function parseFrame(raw: unknown): ServerFrame | null {
       return { t: 'inventory', text: str(m.text) };
     case 'cosmetics':
       return { t: 'cosmetics', colors: strList(m.colors), badges: strList(m.badges), color: optStr(m.color), badge: optStr(m.badge) };
+    case 'events':
+      return {
+        t: 'events',
+        now: objects(m.now).map((e) => ({ title: str(e.title), ends: num(e.ends) })),
+        next: objects(m.next).map((e) => ({ title: str(e.title), at: num(e.at) })),
+      };
     default:
       return { t: 'unknown', type: m.t };
   }
@@ -154,6 +162,7 @@ export interface RoomItem {
   qty: number;
 }
 
+const objects = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v.filter(isObject) : []);
 const strList = (v: unknown): string[] => (Array.isArray(v) ? v.filter((e): e is string => typeof e === 'string') : []);
 
 function things(v: unknown): RoomThing[] {
