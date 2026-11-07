@@ -12,6 +12,8 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts', // adds the game master the staff tests sign in as
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  timeout: 30_000, // one test; a hung page fails in half a minute
+  globalTimeout: 10 * 60_000, // the whole run (normally a minute or two), so nothing can hang CI
   retries: 0, // a flaky test is a bug to fix, not to retry
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   metadata: { proxyControlPort: PROXY_CONTROL_PORT },

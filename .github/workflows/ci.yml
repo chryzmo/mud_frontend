@@ -12,6 +12,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -21,9 +22,12 @@ jobs:
 
   # End-to-end: a real browser against this build and mud_server's main, with Postgres.
   # Runs after the fast checks pass, and the deploy waits for it.
+  # A normal run takes about 3 minutes; the limits below turn a stalled download or a hung browser
+  # into a prompt failure instead of a job that holds the deploy for hours.
   e2e:
     needs: test
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17
@@ -58,7 +62,9 @@ jobs:
           go-version: "1.27"
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 5
       - run: scripts/e2e.sh
+        timeout-minutes: 10
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
