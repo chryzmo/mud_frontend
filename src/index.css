@@ -190,6 +190,7 @@ html, body {
 .hp-value { color: var(--hp); }
 .mp-value { color: var(--mp); }
 .stat-boosted { font-weight: bold; color: var(--boost); }
+.stat-xp { font-weight: normal; color: var(--muted); }
 
 /* Compass on the left, quick actions on the right */
 #controls {

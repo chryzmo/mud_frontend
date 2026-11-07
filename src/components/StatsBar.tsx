@@ -9,6 +9,9 @@ export interface Stats {
   atkbonus: number;
   def: number;
   defbonus: number;
+  level?: number;
+  xp?: number;
+  next?: number;
 }
 
 interface Props {
@@ -33,6 +36,15 @@ const StatsBar: FC<Props> = ({ stats }): ReactElement => {
         <span className="stat-label">MP</span>
         <span className="stat-value mp-value">{stats.mp} / {stats.maxmp}</span>
       </div>
+      {stats.level !== undefined && (
+        <div className="stat-row">
+          <span className="stat-label">LV</span>
+          <span className="stat-value" title="Level and experience">
+            {stats.level}
+            <span className="stat-xp">{stats.next ? ` · ${stats.xp ?? 0}/${stats.next} XP` : ` · ${stats.xp ?? 0} XP`}</span>
+          </span>
+        </div>
+      )}
       <div className="stat-row">
         <span className="stat-label">ATK</span>
         <span className="stat-value">{statVal(stats.atk, stats.atkbonus)}</span>
