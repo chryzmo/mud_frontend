@@ -29,6 +29,15 @@
   --hp: #b42318;
   --mp: #1d6fa5;
   --boost: #7a5b00;
+  /* Name colours a sticker can grant (src/cosmetics.ts); each is tested against --panel in theme.test.ts. */
+  --nc-gold: #7a5b00;
+  --nc-crimson: #a8200f;
+  --nc-azure: #14609e;
+  --nc-emerald: #1b6b2b;
+  --nc-violet: #6a2fb0;
+  --nc-amber: #8a4a00;
+  --nc-rose: #b0245f;
+  --nc-silver: #4f5b69;
   --tap: 44px; /* minimum touch target */
   --gap: 8px;
 }
@@ -63,6 +72,14 @@
     --hp: #ff8f85;
     --mp: #7cc0ee;
     --boost: #f0c75e;
+    --nc-gold: #f0c75e;
+    --nc-crimson: #ff8a80;
+    --nc-azure: #7cc0ee;
+    --nc-emerald: #7fd98f;
+    --nc-violet: #c3a3ff;
+    --nc-amber: #ffb066;
+    --nc-rose: #ff9ec4;
+    --nc-silver: #cfd8e3;
   }
 }
 
@@ -244,6 +261,19 @@ input[type="text"] {
 .chatText { color: var(--global); }
 .chatWho { font-weight: bold; }
 .chatGM { text-decoration: underline; }
+.nc-gold { color: var(--nc-gold); }
+.nc-crimson { color: var(--nc-crimson); }
+.nc-azure { color: var(--nc-azure); }
+.nc-emerald { color: var(--nc-emerald); }
+.nc-violet { color: var(--nc-violet); }
+.nc-amber { color: var(--nc-amber); }
+.nc-rose { color: var(--nc-rose); }
+.nc-silver { color: var(--nc-silver); }
+.badge { font-weight: normal; }
+.sticker-sheet .sticker-row { display: flex; gap: var(--gap); }
+.sticker-sheet .sticker-row input { flex: 1; min-width: 0; }
+.sticker-sheet .sticker-label { color: var(--muted); font-size: 0.9em; margin-top: 4px; }
+.sticker-sheet .sticker-worn { font-weight: bold; }
 .announceText { color: var(--warn-ink); background: var(--warn-bg); border-left: 3px solid var(--warn-line); padding: 2px 6px; }
 
 /* A GM or event announcement, over the log until dismissed. */

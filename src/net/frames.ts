@@ -40,15 +40,17 @@ export type ServerFrame =
   | AuthFrame
   | ErrorFrame
   | { t: 'text'; text: string }
-  | { t: 'say'; who: string; text: string }
-  | { t: 'chat'; who: string; text: string; gm: boolean }
+  | { t: 'say'; who: string; text: string; color?: string; badge?: string }
+  | { t: 'chat'; who: string; text: string; gm: boolean; color?: string; badge?: string }
   | { t: 'announce'; text: string; from: 'gm' | 'event' }
-  | { t: 'arrive'; who: string; from?: string }
-  | { t: 'leave'; who: string; to?: string }
+  | { t: 'arrive'; who: string; from?: string; color?: string; badge?: string }
+  | { t: 'leave'; who: string; to?: string; color?: string; badge?: string }
   | { t: 'whisper'; who: string; text: string; out: boolean }
   | { t: 'stats'; stats: Stats }
   | { t: 'room'; name: string; exits: string[]; locked: string[]; things: RoomThing[]; people: RoomThing[]; items: RoomItem[] }
   | { t: 'inventory'; text: string }
+  // The player's own unlocked cosmetics and the ones worn; absent until they own any.
+  | { t: 'cosmetics'; colors: string[]; badges: string[]; color?: string; badge?: string }
   // A type this client does not know (a later phase's frame). It still counts.
   | { t: 'unknown'; type: string };
 
@@ -92,15 +94,15 @@ export function parseFrame(raw: unknown): ServerFrame | null {
     case 'text':
       return { t: 'text', text: str(m.text) };
     case 'say':
-      return { t: 'say', who: str(m.who), text: str(m.text) };
+      return { t: 'say', who: str(m.who), text: str(m.text), color: optStr(m.color), badge: optStr(m.badge) };
     case 'arrive':
-      return { t: 'arrive', who: str(m.who), from: optStr(m.from) };
+      return { t: 'arrive', who: str(m.who), from: optStr(m.from), color: optStr(m.color), badge: optStr(m.badge) };
     case 'chat':
-      return { t: 'chat', who: str(m.who), text: str(m.text), gm: m.gm === true };
+      return { t: 'chat', who: str(m.who), text: str(m.text), gm: m.gm === true, color: optStr(m.color), badge: optStr(m.badge) };
     case 'announce':
       return { t: 'announce', text: str(m.text), from: m.from === 'event' ? 'event' : 'gm' };
     case 'leave':
-      return { t: 'leave', who: str(m.who), to: optStr(m.to) };
+      return { t: 'leave', who: str(m.who), to: optStr(m.to), color: optStr(m.color), badge: optStr(m.badge) };
     case 'whisper':
       return { t: 'whisper', who: str(m.who), text: str(m.text), out: m.out === true };
     case 'stats':
@@ -119,6 +121,8 @@ export function parseFrame(raw: unknown): ServerFrame | null {
       };
     case 'inventory':
       return { t: 'inventory', text: str(m.text) };
+    case 'cosmetics':
+      return { t: 'cosmetics', colors: strList(m.colors), badges: strList(m.badges), color: optStr(m.color), badge: optStr(m.badge) };
     default:
       return { t: 'unknown', type: m.t };
   }

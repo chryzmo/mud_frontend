@@ -30,6 +30,7 @@ const PAIRS: [string, string][] = [
   ['accent-ink', 'accent'], ['accent', 'card'],
   ['danger', 'danger-bg'], ['note-ink', 'note-bg'], ['warn-ink', 'warn-bg'],
   ['npc', 'panel'], ['player', 'panel'], ['item', 'panel'], ['whisper', 'panel'], ['global', 'panel'], ['warn-ink', 'panel'],
+  ...['gold', 'crimson', 'azure', 'emerald', 'violet', 'amber', 'rose', 'silver'].map((c): [string, string] => [`nc-${c}`, 'panel']),
   ['hp', 'bg'], ['mp', 'bg'], ['boost', 'bg'],
 ];
 
