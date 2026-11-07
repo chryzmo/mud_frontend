@@ -37,6 +37,14 @@ const GMPanel: FC<Props> = ({ onCommand, onClose, initialName = '', onName }): R
           <button type="button" onClick={() => run('UNLOCK')}>Unlock joins</button>
         </div>
 
+        <div className="gm-label">Global chat</div>
+        <div className="gm-row">
+          <button type="button" onClick={() => run('CHAT OFF')}>Chat off</button>
+          <button type="button" onClick={() => run('CHAT ON')}>Chat on</button>
+          <button type="button" onClick={() => run('SLOW 30')}>Slow 30 s</button>
+          <button type="button" onClick={() => run('SLOW 0')}>Slow off</button>
+        </div>
+
         <label className="gm-label" htmlFor="gm-announce">Announce to everyone</label>
         <div className="gm-row">
           <input id="gm-announce" type="text" value={announce} placeholder="The feast begins at nine!" onChange={(e) => setAnnounce(e.target.value)} />

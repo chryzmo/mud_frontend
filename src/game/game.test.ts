@@ -47,6 +47,19 @@ describe('reduce', () => {
     expect(reduce(s, { type: 'closeInventory' }).inventory).toBeNull();
   });
 
+  it('logs global chat and announcements, and keeps the latest announcement as a banner until it is dismissed', () => {
+    let s = initialGameState();
+    s = reduce(s, { type: 'frame', frame: { t: 'chat', who: 'Ann', text: 'hi all', gm: false } });
+    expect(s.log).toMatchObject([{ kind: 'chat', who: 'Ann', text: 'hi all', gm: false }]);
+    expect(s.banner).toBeNull();
+    s = reduce(s, { type: 'frame', frame: { t: 'announce', text: 'Feast at nine', from: 'gm' } });
+    expect(s.log[1]).toMatchObject({ kind: 'announce', label: 'GM', text: 'Feast at nine' });
+    expect(s.banner).toMatchObject({ label: 'GM', text: 'Feast at nine' });
+    s = reduce(s, { type: 'frame', frame: { t: 'announce', text: 'The bell tolls', from: 'event' } });
+    expect(s.banner).toMatchObject({ label: 'Event', text: 'The bell tolls' });
+    expect(reduce(s, { type: 'dismissBanner' }).banner).toBeNull();
+  });
+
   it('caps the log, dropping the oldest and keeping ids unique and increasing', () => {
     let s: GameState = initialGameState();
     for (let i = 0; i < MAX_LOG + 25; i++) s = reduce(s, { type: 'frame', frame: say(i) });

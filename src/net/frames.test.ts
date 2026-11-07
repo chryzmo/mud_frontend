@@ -23,6 +23,10 @@ describe('parseFrame', () => {
       things: [{ id: 'c1', name: 'clock', verbs: ['TURN'] }], // a bad entry is skipped, not fatal
       people: [{ id: 'porter', name: 'Porter', verbs: [] }], items: [{ name: 'KEY', qty: 2 }, { name: 'GOLD', qty: 1 }],
     });
+    expect(parseFrame(f('chat', { who: 'Ann', text: 'hi all', ch: 'global' }))).toEqual({ t: 'chat', who: 'Ann', text: 'hi all', gm: false });
+    expect(parseFrame(f('chat', { who: 'boss', text: 'hello', ch: 'global', gm: true }))).toEqual({ t: 'chat', who: 'boss', text: 'hello', gm: true });
+    expect(parseFrame(f('announce', { text: 'Feast!', from: 'event' }))).toEqual({ t: 'announce', text: 'Feast!', from: 'event' });
+    expect(parseFrame(f('announce', { text: 'Hi', from: 'gm' }))).toEqual({ t: 'announce', text: 'Hi', from: 'gm' });
     expect(parseFrame(f('inventory', { text: 'nothing' }))).toEqual({ t: 'inventory', text: 'nothing' });
     expect(parseFrame(f('stats', { hp: 5, maxhp: 20, mp: 1, maxmp: 2, atk: 3, atkbonus: 0, def: 4, defbonus: 1 }))).toEqual({
       t: 'stats', stats: { hp: 5, maxhp: 20, mp: 1, maxmp: 2, atk: 3, atkbonus: 0, def: 4, defbonus: 1 },

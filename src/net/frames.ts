@@ -41,6 +41,8 @@ export type ServerFrame =
   | ErrorFrame
   | { t: 'text'; text: string }
   | { t: 'say'; who: string; text: string }
+  | { t: 'chat'; who: string; text: string; gm: boolean }
+  | { t: 'announce'; text: string; from: 'gm' | 'event' }
   | { t: 'arrive'; who: string; from?: string }
   | { t: 'leave'; who: string; to?: string }
   | { t: 'whisper'; who: string; text: string; out: boolean }
@@ -93,6 +95,10 @@ export function parseFrame(raw: unknown): ServerFrame | null {
       return { t: 'say', who: str(m.who), text: str(m.text) };
     case 'arrive':
       return { t: 'arrive', who: str(m.who), from: optStr(m.from) };
+    case 'chat':
+      return { t: 'chat', who: str(m.who), text: str(m.text), gm: m.gm === true };
+    case 'announce':
+      return { t: 'announce', text: str(m.text), from: m.from === 'event' ? 'event' : 'gm' };
     case 'leave':
       return { t: 'leave', who: str(m.who), to: optStr(m.to) };
     case 'whisper':

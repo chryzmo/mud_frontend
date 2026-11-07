@@ -29,7 +29,7 @@ const PAIRS: [string, string][] = [
   ['ink', 'bg'], ['ink', 'panel'], ['ink', 'card'], ['muted', 'bg'], ['muted', 'panel'], ['muted', 'card'],
   ['accent-ink', 'accent'], ['accent', 'card'],
   ['danger', 'danger-bg'], ['note-ink', 'note-bg'], ['warn-ink', 'warn-bg'],
-  ['npc', 'panel'], ['player', 'panel'], ['item', 'panel'], ['whisper', 'panel'], ['warn-ink', 'panel'],
+  ['npc', 'panel'], ['player', 'panel'], ['item', 'panel'], ['whisper', 'panel'], ['global', 'panel'], ['warn-ink', 'panel'],
   ['hp', 'bg'], ['mp', 'bg'], ['boost', 'bg'],
 ];
 

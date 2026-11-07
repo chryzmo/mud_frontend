@@ -11,6 +11,8 @@ export type EntryBody =
   | { kind: 'player'; playerName: string; actionText: string }
   | { kind: 'item'; itemName: string; actionText: string }
   | { kind: 'whisper'; text: string }
+  | { kind: 'chat'; who: string; text: string; gm: boolean } // global chat
+  | { kind: 'announce'; label: string; text: string }
   | { kind: 'echo'; text: string } // a command the player sent
   | { kind: 'notice'; text: string } // from the client: a slow-down, an unknown command
   | { kind: 'divider'; text: string }; // the client's own marker, e.g. messages may have been missed
@@ -72,6 +74,10 @@ export function frameLines(frame: ServerFrame): EntryBody[] {
         kind: 'whisper',
         text: frame.out ? `You whisper to ${frame.who}, "${frame.text}"` : `${frame.who} whispers, "${frame.text}"`,
       }];
+    case 'chat':
+      return [{ kind: 'chat', who: frame.who, text: frame.text, gm: frame.gm }];
+    case 'announce':
+      return [{ kind: 'announce', label: frame.from === 'event' ? 'Event' : 'GM', text: frame.text }];
     default:
       return [];
   }
