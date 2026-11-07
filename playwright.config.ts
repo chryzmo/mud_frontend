@@ -8,7 +8,7 @@ const PROXY_CONTROL_PORT = 18082;
 const WEB_PORT = 4173;
 
 export default defineConfig({
-  testDir: 'e2e',
+  testDir: process.env.E2E_CONTENT ? 'e2e-content' : 'e2e', // content mode plays the fixture world (e2e/content-world.mjs)
   globalSetup: './e2e/global-setup.ts', // adds the game master the staff tests sign in as
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -33,7 +33,7 @@ export default defineConfig({
       port: SERVER_PORT,
       timeout: 180_000,
       reuseExistingServer: false,
-      env: { E2E_SERVER_PORT: String(SERVER_PORT) },
+      env: { E2E_SERVER_PORT: String(SERVER_PORT), E2E_CONTENT: process.env.E2E_CONTENT ?? '' },
     },
     {
       // Lets a test cut one browser's connection (see e2e/proxy.mjs).

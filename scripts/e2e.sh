@@ -3,6 +3,8 @@
 #
 #   scripts/e2e.sh                 all tests
 #   scripts/e2e.sh -g "recover"    only tests matching a pattern (extra args go to Playwright)
+#   scripts/e2e.sh --content       the content-mode tests (e2e-content/): the server plays a fixture
+#                                  world with people, scenery, a walkthrough, events and a sticker
 #
 # Needs: ../mud_server (or MUD_SERVER_DIR) with Go installed, and the server repo's local
 # Postgres (`scripts/db.sh up` there). The database is DROPPED AND RESEEDED each run:
@@ -10,6 +12,11 @@
 # (its name must end in _test or _e2e). One-time browser install: npx playwright install chromium
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+if [ "${1:-}" = "--content" ]; then
+	export E2E_CONTENT=1
+	shift
+fi
 
 [ -d node_modules ] || npm ci --silent
 export MUD_SERVER_DIR="${MUD_SERVER_DIR:-$PWD/../mud_server}"
