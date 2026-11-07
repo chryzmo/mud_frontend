@@ -1,7 +1,8 @@
 /* The leaderboard page: big enough for a projector, one column on a phone. Colours come from index.css. */
 .board-page { height: auto; min-height: 100%; }
 #board { max-width: 46rem; margin: 0 auto; padding: 16px; }
-#board h1 { font-size: 1.6rem; margin: 8px 0 12px; }
+#board h1 { font-size: 1.6rem; margin: 8px 0 0; }
+#board .brand-tagline { margin: 0 0 12px; }
 .tabs { display: flex; gap: var(--gap); margin-bottom: 12px; }
 .tabs .tab { flex: 1; min-height: var(--tap); font-size: 1rem; }
 .tabs .tab.active { background: var(--accent); color: var(--accent-ink); }
