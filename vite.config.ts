@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 // MUD_PROXY_TARGET points the proxy at another server (the end-to-end tests use one
 // on its own port, so they do not collide with a dev server on 8080).
 const proxy = {
+  '/api': { target: process.env.MUD_API_TARGET ?? 'http://127.0.0.1:8080' },
   '/ws': {
     target: process.env.MUD_PROXY_TARGET ?? 'ws://127.0.0.1:8080',
     ws: true,
@@ -15,6 +16,8 @@ const proxy = {
 
 export default defineConfig({
   plugins: [react()],
+  // The leaderboard is its own small page (leaderboard.html), served at /leaderboard.html.
+  build: { rollupOptions: { input: { main: 'index.html', leaderboard: 'leaderboard.html' } } },
   server: {
     port: 3000,
     proxy,

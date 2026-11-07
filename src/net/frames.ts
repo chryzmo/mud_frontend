@@ -10,6 +10,8 @@ export interface Stats {
   mp: number; maxmp: number;
   atk: number; atkbonus: number;
   def: number; defbonus: number;
+  // Level, total XP and the total at which the next level starts (0 at the top). Missing from an older server.
+  level?: number; xp?: number; next?: number;
 }
 
 export interface AuthFrame {
@@ -111,6 +113,7 @@ export function parseFrame(raw: unknown): ServerFrame | null {
         stats: {
           hp: num(m.hp), maxhp: num(m.maxhp), mp: num(m.mp), maxmp: num(m.maxmp),
           atk: num(m.atk), atkbonus: num(m.atkbonus), def: num(m.def), defbonus: num(m.defbonus),
+          level: optNum(m.level), xp: optNum(m.xp), next: optNum(m.next),
         },
       };
     case 'room':

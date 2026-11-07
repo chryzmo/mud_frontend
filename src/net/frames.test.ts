@@ -33,6 +33,12 @@ describe('parseFrame', () => {
     });
   });
 
+  it('reads level, XP and the next level from stats, and leaves them out for an older server', () => {
+    expect(parseFrame('{"t":"stats","hp":1,"maxhp":2,"mp":3,"maxmp":4,"atk":5,"atkbonus":0,"def":6,"defbonus":0,"level":2,"xp":30,"next":60}')).toMatchObject({ t: 'stats', stats: { level: 2, xp: 30, next: 60 } });
+    const old = parseFrame('{"t":"stats","hp":1,"maxhp":2,"mp":3,"maxmp":4,"atk":5,"atkbonus":0,"def":6,"defbonus":0}');
+    expect(old).toMatchObject({ stats: { level: undefined, xp: undefined, next: undefined } });
+  });
+
   it('parses an auth reply with the join, resume and recover fields', () => {
     expect(parseFrame(f('auth', { ok: true, message: 'Welcome', token: 'T', recovery: 'R' }))).toEqual({
       t: 'auth', ok: true, code: undefined, message: 'Welcome', token: 'T', recovery: 'R',

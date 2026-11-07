@@ -1,0 +1,20 @@
+/* The leaderboard page: big enough for a projector, one column on a phone. Colours come from index.css. */
+.board-page { height: auto; min-height: 100%; }
+#board { max-width: 46rem; margin: 0 auto; padding: 16px; }
+#board h1 { font-size: 1.6rem; margin: 8px 0 12px; }
+.tabs { display: flex; gap: var(--gap); margin-bottom: 12px; }
+.tabs .tab { flex: 1; min-height: var(--tap); font-size: 1rem; }
+.tabs .tab.active { background: var(--accent); color: var(--accent-ink); }
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: flex; align-items: baseline; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line); font-size: 1.15rem; }
+.row .rank { min-width: 2.2rem; text-align: right; color: var(--muted); }
+.row .name { flex: 1; min-width: 0; font-weight: bold; overflow-wrap: anywhere; }
+.row .level { color: var(--muted); }
+.row .score { min-width: 7.5rem; text-align: right; }
+.note { color: var(--muted); }
+@media (min-width: 1200px) {
+  #board { max-width: 70rem; }
+  #board h1 { font-size: 3rem; }
+  .row { font-size: 2rem; padding: 14px 8px; }
+  .tabs .tab { font-size: 1.6rem; min-height: 64px; }
+}
