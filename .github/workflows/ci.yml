@@ -65,6 +65,8 @@ jobs:
         timeout-minutes: 5
       - run: scripts/e2e.sh
         timeout-minutes: 10
+      - run: scripts/e2e.sh --content # the same server, playing the fixture world (e2e/content-world.mjs)
+        timeout-minutes: 10
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

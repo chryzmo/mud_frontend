@@ -159,6 +159,10 @@ npx playwright install chromium   # once per machine
 - `e2e/proxy.mjs` sits between the web server and the game server. Import `test` from `e2e/helpers.ts` (not from
   `@playwright/test`) to get a `net` fixture: `net.cut()` drops this browser's connection, `net.block()` / `net.unblock()`
   make an outage. Each browser context is tagged by a cookie, so one test never cuts another's connection.
+- **Content mode:** `scripts/e2e.sh --content` (or `E2E_CONTENT=1`) runs `e2e-content/*.spec.ts` against a server that plays the fixture world
+  in `e2e/content-world.mjs` (written fresh each run so event times are relative to now: a walkthrough, a person, scenery, an event on
+  now and one coming, one sticker code under a fixture-only `MUD_CODE_SECRET`). Use it for anything the SQL-seeded world cannot show. The fixture
+  holds no real world text; the server validates it at start, so a schema change that breaks it fails loudly. CI runs it after the normal run.
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
 - Staff tests sign in as seeded GM accounts (`e2e/global-setup.ts` creates `e2egmone`..`e2egmthree` after the server is up;
   one account per test, since the server allows one session per account and tests run in parallel). Never use `GM LOCK` in

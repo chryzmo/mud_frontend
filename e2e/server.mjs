@@ -5,13 +5,16 @@
 //   MUD_SERVER_DIR      the mud_server checkout (default ../mud_server)
 //   E2E_DATABASE_URL    a database it may DROP AND RESEED (default: the local test database)
 //   E2E_SERVER_PORT     listen port (default 18080)
+//   E2E_CONTENT=1       content mode: the server plays the fixture world in e2e/content-world.mjs
+//                       (people, scenery, a walkthrough, events, a sticker) instead of the SQL-seeded one
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { CODE_SECRET, worldYaml } from './content-world.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const serverDir = path.resolve(process.env.MUD_SERVER_DIR ?? path.join(here, '..', '..', 'mud_server'));
@@ -42,10 +45,18 @@ const bin = path.join(mkdtempSync(path.join(tmpdir(), 'mud-e2e-')), 'mudserver')
 const build = spawnSync('go', ['build', '-o', bin, './src'], { cwd: serverDir, stdio: 'inherit' });
 if (build.status !== 0) process.exit(build.status ?? 1);
 
+const env = { ...process.env, MUD_LISTEN_ADDR: `127.0.0.1:${port}`, MUD_DATABASE_URL: databaseUrl };
+if (process.env.E2E_CONTENT) {
+  const dir = mkdtempSync(path.join(tmpdir(), 'mud-e2e-world-'));
+  writeFileSync(path.join(dir, 'world.yaml'), worldYaml());
+  env.MUD_WORLD_DIR = dir;
+  env.MUD_CODE_SECRET = CODE_SECRET;
+  console.log(`content mode: world in ${dir}`);
+}
 const server = spawn(bin, [], {
   cwd: serverDir, // the server reads config/server_config.json from here
   stdio: 'inherit',
-  env: { ...process.env, MUD_LISTEN_ADDR: `127.0.0.1:${port}`, MUD_DATABASE_URL: databaseUrl },
+  env,
 });
 server.on('exit', (code) => process.exit(code ?? 0));
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => server.kill(sig));
