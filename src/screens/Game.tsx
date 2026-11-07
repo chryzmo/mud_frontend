@@ -75,7 +75,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const choose = (t: Target) => {
     const examine: SheetAction = { label: 'Examine', run: () => send(`EXAMINE ${t.name}`) };
     const actions: SheetAction[] =
-      t.kind === 'player' ? [{ label: 'Whisper', run: () => fill(`WHISPER ${t.name} `) }, examine]
+      t.kind === 'player' ? [{ label: 'Whisper', run: () => fill(`WHISPER ${t.name} `) }, examine, { label: 'Report', run: () => fill(`REPORT ${t.name} `) }]
       : t.kind === 'npc' ? [{ label: 'Attack', run: () => send(`ATTACK ${t.name}`) }, examine]
       : [{ label: 'Pick up', run: () => send(`GET ${t.name}`) }, examine];
     setSheet({ title: t.name, actions });

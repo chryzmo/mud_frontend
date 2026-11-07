@@ -257,6 +257,16 @@ describe('playing', () => {
     expect(sock().sent).toHaveLength(sent);
   });
 
+  it('reporting from the sheet fills the input so the player can say what happened', () => {
+    playing();
+    deliver({ t: 'say', who: 'bob', text: 'hi' });
+    fireEvent.click(screen.getByText('bob'));
+    const sent = sock().sent.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Report' }));
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('REPORT bob ');
+    expect(sock().sent).toHaveLength(sent);
+  });
+
   it('sends the quick actions in one tap', () => {
     playing();
     fireEvent.click(screen.getByRole('button', { name: 'Look' }));

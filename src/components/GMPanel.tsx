@@ -45,6 +45,12 @@ const GMPanel: FC<Props> = ({ onCommand, onClose, initialName = '', onName }): R
           <button type="button" onClick={() => run('SLOW 0')}>Slow off</button>
         </div>
 
+        <div className="gm-label">Reports and leaderboard</div>
+        <div className="gm-row">
+          <button type="button" onClick={() => run('REPORTS')}>Open reports</button>
+          <button type="button" onClick={() => run('REPORTS CLOSE ALL')}>Close all reports</button>
+        </div>
+
         <label className="gm-label" htmlFor="gm-announce">Announce to everyone</label>
         <div className="gm-row">
           <input id="gm-announce" type="text" value={announce} placeholder="The feast begins at nine!" onChange={(e) => setAnnounce(e.target.value)} />
@@ -60,6 +66,10 @@ const GMPanel: FC<Props> = ({ onCommand, onClose, initialName = '', onName }): R
           <button type="button" disabled={!ready} onClick={() => run(`MUTE ${who} 15`)}>Mute 15 min</button>
           <button type="button" disabled={!ready} onClick={() => run(`MUTE ${who} 60`)}>Mute 1 hour</button>
           <button type="button" disabled={!ready} onClick={() => run(`UNMUTE ${who}`)}>Unmute</button>
+        </div>
+        <div className="gm-row">
+          <button type="button" disabled={!ready} onClick={() => run(`HIDE ${who}`)}>Hide from leaderboard</button>
+          <button type="button" disabled={!ready} onClick={() => run(`UNHIDE ${who}`)}>Unhide</button>
         </div>
         <div className="gm-row">
           <button type="button" disabled={!ready} onClick={() => run(`SUMMON ${who}`)}>Summon</button>
