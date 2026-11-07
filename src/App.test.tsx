@@ -200,10 +200,10 @@ describe('playing', () => {
     expect(screen.getByText(/: hello world/)).toBeInTheDocument();
 
     deliver({ t: 'announce', text: 'Feast at nine', from: 'gm' });
-    const banner = screen.getByRole('status');
+    const banner = screen.getByRole('region', { name: 'Announcement' });
     expect(banner).toHaveTextContent('GM: Feast at nine');
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss announcement' }));
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Announcement' })).toBeNull();
     expect(screen.getByText('[GM] Feast at nine')).toBeInTheDocument(); // still in the log
 
     const box = screen.getByPlaceholderText('What would you like to do..?');
