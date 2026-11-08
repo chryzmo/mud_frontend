@@ -8,7 +8,7 @@ import InputBar from '../components/InputBar';
 import { InventoryModal } from '../components/InventoryModal';
 import NavButtons from '../components/NavButtons';
 import QuickActions from '../components/QuickActions';
-import StickerSheet from '../components/StickerSheet';
+import StyleSheet from '../components/StyleSheet';
 import EventBar from '../components/EventBar';
 import EventsSheet from '../components/EventsSheet';
 import StatusLine from '../components/StatusLine';
@@ -61,7 +61,8 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const [typing, setTyping] = useState(false); // the keyboard is up: give the log the room
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [gmOpen, setGmOpen] = useState(false);
-  const [stickersOpen, setStickersOpen] = useState(false);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const ownsStyle = (state.cosmetics?.colors.length ?? 0) + (state.cosmetics?.badges.length ?? 0) > 0;
   const [eventsOpen, setEventsOpen] = useState(false);
   const [hideGlobal, setHideGlobal] = useState(readHidden);
   const gmName = useRef('');
@@ -187,7 +188,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         <StatsBar stats={state.stats} />
         <div id="controls">
           <NavButtons exits={state.room?.exits ?? []} onNavigate={(dir) => send('MOVE ' + dir)} />
-          <QuickActions onCommand={send} onHere={somethingHere ? showHere : undefined} onGuide={showGuide} onChat={showChat} onStickers={() => setStickersOpen(true)} />
+          <QuickActions onCommand={send} onHere={somethingHere ? showHere : undefined} onGuide={showGuide} onChat={showChat} onStyle={ownsStyle ? () => setStyleOpen(true) : undefined} />
         </div>
         <InputBar
           message={message}
@@ -207,7 +208,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         hide={() => game.dispatch({ type: 'closeInventory' })}
       />
       {gmOpen && <GMPanel initialName={gmName.current} onName={(n) => { gmName.current = n; }} onCommand={send} onClose={() => setGmOpen(false)} />}
-      {stickersOpen && <StickerSheet cosmetics={state.cosmetics} onCommand={send} onClose={() => setStickersOpen(false)} />}
+      {styleOpen && <StyleSheet cosmetics={state.cosmetics} onCommand={send} onClose={() => setStyleOpen(false)} />}
       {eventsOpen && <EventsSheet schedule={state.events} onClose={() => setEventsOpen(false)} />}
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
     </div>

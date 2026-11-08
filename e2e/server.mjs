@@ -6,7 +6,7 @@
 //   E2E_DATABASE_URL    a database it may DROP AND RESEED (default: the local test database)
 //   E2E_SERVER_PORT     listen port (default 18080)
 //   E2E_CONTENT=1       content mode: the server plays the fixture world in e2e/content-world.mjs
-//                       (people, scenery, a walkthrough, events, a sticker) instead of the SQL-seeded one
+//                       (people, scenery, a walkthrough, events, a quest that grants a cosmetic) instead of the SQL-seeded one
 import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { CODE_SECRET, worldYaml } from './content-world.mjs';
+import { worldYaml } from './content-world.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const serverDir = path.resolve(process.env.MUD_SERVER_DIR ?? path.join(here, '..', '..', 'mud_server'));
@@ -50,7 +50,6 @@ if (process.env.E2E_CONTENT) {
   const dir = mkdtempSync(path.join(tmpdir(), 'mud-e2e-world-'));
   writeFileSync(path.join(dir, 'world.yaml'), worldYaml());
   env.MUD_WORLD_DIR = dir;
-  env.MUD_CODE_SECRET = CODE_SECRET;
   console.log(`content mode: world in ${dir}`);
 }
 const server = spawn(bin, [], {

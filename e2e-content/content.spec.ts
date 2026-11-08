@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { INPUT, play, say } from '../e2e/helpers';
-import { STICKER_CODE } from '../e2e/content-world.mjs';
 
 // The client against a world with content: the fixture in e2e/content-world.mjs.
 
@@ -44,18 +43,21 @@ test('the banner shows what is on now, and the list shows what is coming', async
   await expect(sheet).toHaveCount(0);
 });
 
-test('a sticker code is redeemed and others see the name wear it', async ({ browser }) => {
+test('a quest earns a cosmetic, the Style sheet appears, and others see the name wear it', async ({ browser }) => {
   const watcher = await (await browser.newContext()).newPage();
   await play(watcher);
 
   const page = await (await browser.newContext()).newPage();
   await play(page);
-  await page.getByRole('button', { name: 'Stickers' }).click();
-  await page.getByLabel('Code from a sticker').fill(STICKER_CODE.toLowerCase());
-  await page.getByRole('button', { name: 'Redeem' }).click();
-  await expect(page.getByText('A warm light finds you.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Style' })).toHaveCount(0); // nothing earned yet
+  await say(page, 'READ plaque');
+  await expect(page.getByText('Your name now shows in gold.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Style' }).click();
+  await expect(page.getByRole('dialog', { name: 'Style' }).getByRole('button', { name: 'gold (worn)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
 
   await say(page, 'SAY shiny');
   await expect(watcher.getByText('shiny')).toBeVisible();
-  await expect(watcher.locator('.nc-gold').first()).toBeVisible(); // the colour from the sticker, on the speaker's name
+  await expect(watcher.locator('.nc-gold').first()).toBeVisible(); // the colour from the quest, on the speaker's name
 });

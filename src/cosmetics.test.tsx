@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import Chatbox from './components/Chatbox';
 import NameTag from './components/NameTag';
-import StickerSheet from './components/StickerSheet';
+import StyleSheet from './components/StyleSheet';
 import { badgeGlyph, BADGES, colorClass, COLORS } from './cosmetics';
 import { frameLines } from './game/entries';
 import { initialGameState, reduce } from './game/state';
 import { parseFrame } from './net/frames';
 
-// Sticker cosmetics (mud_server#68): fixed keys on the frames that name a player, and a `cosmetics` frame.
+// Cosmetics (mud_server#68, #83): fixed keys on the frames that name a player, and a `cosmetics` frame.
 
 describe('cosmetic frames', () => {
   it('reads color and badge on the frames that name a player, and leaves them out when absent', () => {
@@ -75,27 +75,20 @@ describe('the fixed palette', () => {
   });
 });
 
-describe('StickerSheet', () => {
-  const setup = (cosmetics: Parameters<typeof StickerSheet>[0]['cosmetics']) => {
+describe('StyleSheet', () => {
+  const setup = (cosmetics: Parameters<typeof StyleSheet>[0]['cosmetics']) => {
     const onCommand = vi.fn();
     const onClose = vi.fn();
-    render(<StickerSheet cosmetics={cosmetics} onCommand={onCommand} onClose={onClose} />);
+    render(<StyleSheet cosmetics={cosmetics} onCommand={onCommand} onClose={onClose} />);
     return { onCommand, onClose };
   };
 
-  it('redeems the typed code and closes', () => {
-    const { onCommand, onClose } = setup(null);
-    const redeem = screen.getByRole('button', { name: 'Redeem' });
-    expect(redeem).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Code from a sticker'), { target: { value: ' abcd-2345 ' } });
-    fireEvent.click(redeem);
-    expect(onCommand).toHaveBeenCalledWith('REDEEM abcd-2345');
-    expect(onClose).toHaveBeenCalled();
-  });
-
-  it('offers nothing to wear before any sticker is redeemed', () => {
+  it('says how to earn one before any is owned, and has no code box', () => {
     setup(null);
+    expect(screen.getByText(/Quests and bosses give them/)).toBeInTheDocument();
     expect(screen.queryByText('Take both off')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Redeem' })).toBeNull();
   });
 
   it('lists what is owned, marks what is worn, and sends COSMETIC for a tap', () => {
@@ -111,13 +104,13 @@ describe('StickerSheet', () => {
 });
 
 describe('QuickActions', () => {
-  it('shows a Stickers button only when it can open something', async () => {
+  it('shows a Style button only when it can open something', async () => {
     const { default: QuickActions } = await import('./components/QuickActions');
     const open = vi.fn();
     const { rerender } = render(<QuickActions onCommand={() => {}} />);
-    expect(screen.queryByRole('button', { name: 'Stickers' })).toBeNull();
-    rerender(<QuickActions onCommand={() => {}} onStickers={open} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Stickers' }));
+    expect(screen.queryByRole('button', { name: 'Style' })).toBeNull();
+    rerender(<QuickActions onCommand={() => {}} onStyle={open} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Style' }));
     expect(open).toHaveBeenCalled();
   });
 });
