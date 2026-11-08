@@ -4,7 +4,7 @@
 #   scripts/e2e.sh                 all tests
 #   scripts/e2e.sh -g "recover"    only tests matching a pattern (extra args go to Playwright)
 #   scripts/e2e.sh --content       the content-mode tests (e2e-content/): the server plays a fixture
-#                                  world with people, scenery, a walkthrough, events and a sticker
+#                                  world with people, scenery, a walkthrough, events and a cosmetic quest
 #
 # Needs: ../mud_server (or MUD_SERVER_DIR) with Go installed, and the server repo's local
 # Postgres (`scripts/db.sh up` there). The database is DROPPED AND RESEEDED each run:

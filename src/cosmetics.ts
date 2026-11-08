@@ -1,4 +1,4 @@
-// Cosmetics are keys into a fixed set, never styling the server (or a sticker) supplies. The same
+// Cosmetics are keys into a fixed set, never styling the server (or a quest) supplies. The same
 // lists are in mud_server/src/internal/worldfile/codes.go; a key that is not here draws nothing.
 export const COLORS = ['gold', 'crimson', 'azure', 'emerald', 'violet', 'amber', 'rose', 'silver'] as const;
 export const BADGES = ['star', 'crown', 'key', 'lantern', 'bell', 'gear', 'quill', 'flame'] as const;

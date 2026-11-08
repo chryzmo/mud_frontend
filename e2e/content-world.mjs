@@ -1,12 +1,7 @@
 // The world the content-mode end-to-end tests play in, written fresh for each run so the event times are
 // relative to now. Nothing here is the real world: it is a few generic rooms that exercise what the client
-// shows (a walkthrough, a person, scenery, an event on now and one coming, a sticker).
-import { createHmac } from 'node:crypto';
+// shows (a walkthrough, a person, scenery, an event on now and one coming, a quest that grants a cosmetic).
 
-export const CODE_SECRET = 'e2e-only-secret'; // pre-commit: allow-secret (a fake HMAC key; only the e2e server uses it)
-export const STICKER_CODE = 'ABCD-2345'; // a code that exists only in this fixture
-
-const hashOf = (code) => createHmac('sha256', CODE_SECRET).update(code.replace(/-/g, '')).digest('hex');
 const at = (ms) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; // minute precision
 
 export function worldYaml(now = Date.now()) {
@@ -27,11 +22,17 @@ rooms:
     exits: {E: yard}
     features:
       lamp: {names: [lamp], examine: "A brass lamp hangs from a hook, unlit."}
+      plaque: {names: [plaque], examine: "A brass plaque you could READ."}
     people:
       gatewarden:
         names: [Gatewarden]
         examine: "A broad keeper in a grey coat."
         greeting: "Well met. Mind the step."
+    rules:
+      - on: {verb: READ, target: plaque}
+        do:
+          - unlock: {color: gold}
+          - say: "The plaque is warm under your hand."
   yard:
     name: The Yard
     description: A swept yard with a well in the middle.
@@ -49,11 +50,5 @@ events:
     duration: 1h
     steps:
       - {announce: "The feast is served."}
-codes:
-  founder:
-    hash: ${hashOf(STICKER_CODE.replace('-', ''))}
-    color: gold
-    badge: star
-    message: "A warm light finds you."
 `;
 }

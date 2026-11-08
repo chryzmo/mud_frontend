@@ -34,7 +34,7 @@ non-trivial work, and update its checklist and log when work lands.
   reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `leaderboard.html` + `src/leaderboard/` is the leaderboard page (a second Vite entry, no React, served at `/leaderboard.html`): `board.ts` parses `/api/leaderboard` and draws it with `textContent` only, `main.ts` refreshes every 10 s. The stats bar shows level and XP from the `stats` frame.
-- `src/cosmetics.ts` is the fixed set of name colours and badges a sticker can grant (the server's list is in `worldfile/codes.go`); `NameTag` draws a name with them and ignores any key not in the set, and `StickerSheet` (the Stickers quick action) redeems a code and picks what to wear. Colours are `--nc-*` tokens in `index.css`, contrast-tested in `theme.test.ts`.
+- `src/cosmetics.ts` is the fixed set of name colours and badges a quest or boss can grant (the server's list is in `worldfile/cosmetics.go`); `NameTag` draws a name with them and ignores any key not in the set, and `StyleSheet` (the Style quick action, shown only once a player owns something) picks what to wear. Colours are `--nc-*` tokens in `index.css`, contrast-tested in `theme.test.ts`.
 - `src/game/events.ts` reads the server's `events` frame (what is on now and what is next, as Unix milliseconds) and words it; `EventBar` is the one line under the header (it counts down on the device's clock, redrawn every 30 s, and draws nothing when no event is on or coming) and `EventsSheet` lists them with start times in the player's own zone.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
 - `e2e/`: Playwright tests and their server launcher (see End-to-end tests). `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.
@@ -161,7 +161,7 @@ npx playwright install chromium   # once per machine
   make an outage. Each browser context is tagged by a cookie, so one test never cuts another's connection.
 - **Content mode:** `scripts/e2e.sh --content` (or `E2E_CONTENT=1`) runs `e2e-content/*.spec.ts` against a server that plays the fixture world
   in `e2e/content-world.mjs` (written fresh each run so event times are relative to now: a walkthrough, a person, scenery, an event on
-  now and one coming, one sticker code under a fixture-only `MUD_CODE_SECRET`). Use it for anything the SQL-seeded world cannot show. The fixture
+  now and one coming, one quest that grants a colour with the `unlock` rule effect). Use it for anything the SQL-seeded world cannot show. The fixture
   holds no real world text; the server validates it at start, so a schema change that breaks it fails loudly. CI runs it after the normal run.
 - No retries: a flaky e2e test is a bug. CI runs the `e2e` job after `test`, checking out `mud_server` `main`.
 - Staff tests sign in as seeded GM accounts (`e2e/global-setup.ts` creates `e2egmone`..`e2egmthree` after the server is up;
