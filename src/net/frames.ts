@@ -14,6 +14,16 @@ export interface Stats {
   level?: number; xp?: number; next?: number;
 }
 
+// One learned spell, as the server describes it.
+export interface SpellInfo {
+  key: string;
+  name: string;
+  effect: string; // bolt, mend, ward or fun
+  cost: number; // magic points
+  cooldown: number; // seconds
+  desc: string;
+}
+
 export interface AuthFrame {
   t: 'auth';
   ok: boolean;
@@ -55,6 +65,8 @@ export type ServerFrame =
   // The schedule: what is on now and what is next, as Unix milliseconds.
   | { t: 'events'; now: { title: string; ends: number }[]; next: { title: string; at: number }[] }
   | { t: 'cosmetics'; colors: string[]; badges: string[]; color?: string; badge?: string }
+  // The spells the player has learned and the keys readied in slots 1 to 3 (empty when free); absent until they know any.
+  | { t: 'spells'; known: SpellInfo[]; ready: string[] }
   // A type this client does not know (a later phase's frame). It still counts.
   | { t: 'unknown'; type: string };
 
@@ -128,6 +140,12 @@ export function parseFrame(raw: unknown): ServerFrame | null {
       return { t: 'inventory', text: str(m.text) };
     case 'cosmetics':
       return { t: 'cosmetics', colors: strList(m.colors), badges: strList(m.badges), color: optStr(m.color), badge: optStr(m.badge) };
+    case 'spells':
+      return {
+        t: 'spells',
+        known: objects(m.known).map((e) => ({ key: str(e.key), name: str(e.name), effect: str(e.effect), cost: num(e.cost), cooldown: num(e.cooldown), desc: str(e.desc) })),
+        ready: strList(m.ready),
+      };
     case 'events':
       return {
         t: 'events',

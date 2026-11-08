@@ -1,6 +1,6 @@
 // The game state a screen draws: the capped log, the room, stats and the inventory
 // text. A pure reducer; nothing here touches the socket or React.
-import { RoomItem, RoomThing, ServerFrame, Stats } from '../net/frames';
+import { RoomItem, RoomThing, ServerFrame, SpellInfo, Stats } from '../net/frames';
 import { Cosmetics } from '../cosmetics';
 import { Schedule } from './events';
 import { Entry, EntryBody, frameLines } from './entries';
@@ -28,6 +28,8 @@ export interface GameState {
   banner: { id: number; label: string; text: string } | null;
   // What this player owns and wears; null until the server says they own something.
   cosmetics: Cosmetics | null;
+  // The spells this player knows and has readied; null until they learn one.
+  spells: { known: SpellInfo[]; ready: string[] } | null;
   // The event schedule; null until the server sends one (a world with no events never does).
   events: Schedule | null;
 }
@@ -42,7 +44,7 @@ export type GameAction =
   | { type: 'closeInventory' }
   | { type: 'dismissBanner' };
 
-export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null, banner: null, cosmetics: null, events: null });
+export const initialGameState = (): GameState => ({ log: [], nextId: 1, room: null, stats: null, inventory: null, banner: null, cosmetics: null, spells: null, events: null });
 
 const GAP_TEXT = 'You were disconnected for a while. Some messages may have been missed.';
 
@@ -82,6 +84,8 @@ export function reduce(state: GameState, action: GameAction): GameState {
           return { ...state, events: { now: f.now, next: f.next } };
         case 'cosmetics':
           return { ...state, cosmetics: { colors: f.colors, badges: f.badges, color: f.color, badge: f.badge } };
+        case 'spells':
+          return { ...state, spells: { known: f.known, ready: f.ready } };
         case 'announce': {
           const lines = frameLines(f);
           const next = append(state, lines);

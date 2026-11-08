@@ -29,6 +29,10 @@ rooms:
         examine: "A broad keeper in a grey coat."
         greeting: "Well met. Mind the step."
     rules:
+      - on: {verb: LIGHT, target: lamp}
+        unless: [{knows_spell: glow}]
+        do:
+          - teach: glow
       - on: {verb: READ, target: plaque}
         do:
           - unlock: {color: gold}
@@ -37,6 +41,15 @@ rooms:
     name: The Yard
     description: A swept yard with a well in the middle.
     exits: {W: gate}
+spells:
+  glow:
+    name: Glow
+    effect: fun
+    cost: 1
+    cooldown: 5
+    description: "A soft golden light."
+    cast: "You glow."
+    room: "{player} glows."
 events:
   walk:
     title: Lantern Walk
