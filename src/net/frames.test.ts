@@ -58,6 +58,18 @@ describe('parseFrame', () => {
     expect(parseFrame(f('error', { code: 'rate_limited', message: 'Slow down.' }))).toMatchObject({ retryMs: undefined });
   });
 
+  it('parses the spells frame and skips what is malformed', () => {
+    expect(parseFrame(f('spells', {
+      known: [{ key: 'firebolt', name: 'Firebolt', effect: 'bolt', cost: 3, cooldown: 4, desc: 'Fire.' }, 'junk'],
+      ready: ['firebolt', '', ''],
+    }))).toEqual({
+      t: 'spells',
+      known: [{ key: 'firebolt', name: 'Firebolt', effect: 'bolt', cost: 3, cooldown: 4, desc: 'Fire.' }],
+      ready: ['firebolt', '', ''],
+    });
+    expect(parseFrame(f('spells'))).toEqual({ t: 'spells', known: [], ready: [] });
+  });
+
   it('turns a type it does not know into an unknown frame instead of dropping it', () => {
     expect(parseFrame(f('global_chat', { who: 'gm', text: 'hello all' }))).toEqual({ t: 'unknown', type: 'global_chat' });
   });

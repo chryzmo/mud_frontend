@@ -191,6 +191,79 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'GET KEY' });
   });
 
+  describe('spells', () => {
+    const firebolt = { key: 'firebolt', name: 'Firebolt', effect: 'bolt', cost: 3, cooldown: 4, desc: 'A bolt of fire.' };
+    const mend = { key: 'mend', name: 'Mend', effect: 'mend', cost: 4, cooldown: 6, desc: 'Heals.' };
+    const learned = () => deliver({ t: 'spells', known: [firebolt, mend], ready: ['firebolt', 'mend', ''] });
+
+    it('shows no spell bar or Spells button until a spell is known', () => {
+      playing();
+      expect(screen.queryByRole('group', { name: 'Spells' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Spells' })).toBeNull();
+    });
+
+    it('casts a readied slot from the bar', () => {
+      playing();
+      learned();
+      fireEvent.click(screen.getByRole('button', { name: /Cast Mend/ }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'CAST 2' });
+    });
+
+    it('fills a slot from the Spells sheet, and takes a spell off the bar', () => {
+      playing();
+      learned();
+      fireEvent.click(screen.getByRole('button', { name: 'Slot 3 is empty' }));
+      fireEvent.click(screen.getByRole('button', { name: /Firebolt · 3 MP · slot 1/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Put in slot 3' }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'READY firebolt 3' });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Spells' }));
+      fireEvent.click(screen.getByRole('button', { name: /Mend · 4 MP · slot 2/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Take off the bar' }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'UNREADY 2' });
+    });
+
+    it('offers a readied bolt on a monster and a readied mend on a player', () => {
+      playing();
+      learned();
+      deliver({ t: 'text', text: '\x1b[1;31mGrak\x1b[0m snarls at you.\n\x1b[1;34mBob\x1b[0m is here.' });
+      fireEvent.click(screen.getByText('Grak'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cast Firebolt' }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'CAST 1 Grak' });
+      expect(screen.queryByRole('button', { name: 'Cast Mend' })).toBeNull();
+
+      fireEvent.click(screen.getByText('Bob'));
+      fireEvent.click(screen.getByRole('button', { name: 'Cast Mend' }));
+      expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'CAST 2 Bob' });
+    });
+  });
+
+  it('offers Shop for a shopkeeper and readies the input for BUY', () => {
+    playing();
+    deliver({
+      t: 'room', name: 'Parlor', exits: [], locked: [], things: [], items: [],
+      people: [{ id: 'fizzwick', name: 'Madam Fizzwick', verbs: ['SHOP'] }, { id: 'pip', name: 'Pip', verbs: [] }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Here' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pip' }));
+    expect(screen.queryByRole('button', { name: 'Shop' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Here' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Madam Fizzwick' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Shop' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'SHOP Madam Fizzwick' });
+    expect(screen.getByPlaceholderText('What would you like to do..?')).toHaveValue('BUY ');
+  });
+
+  it('lets an item in the pack be used or read', () => {
+    playing();
+    deliver({ t: 'inventory', text: 'Your inventory contains:\n\n\x1b[1;32m2x HEALING POTION\x1b[0m\n' });
+    fireEvent.click(screen.getByText(/HEALING POTION/));
+    fireEvent.click(screen.getByRole('button', { name: 'Use' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'USE HEALING POTION' });
+  });
+
   it('opens the guide for the journal, a hint and the map', () => {
     playing();
     for (const [label, line] of [['Journal', 'JOURNAL'], ['Hint', 'HINT'], ['Map', 'MAP']]) {

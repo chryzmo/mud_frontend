@@ -61,3 +61,21 @@ test('a quest earns a cosmetic, the Style sheet appears, and others see the name
   await expect(watcher.getByText('shiny')).toBeVisible();
   await expect(watcher.locator('.nc-gold').first()).toBeVisible(); // the colour from the quest, on the speaker's name
 });
+
+test('a learned spell appears on the bar and can be taken off and put back from the Spells sheet', async ({ page }) => {
+  await play(page);
+  await expect(page.getByRole('group', { name: 'Spells' })).toHaveCount(0); // nothing learned yet
+  await say(page, 'LIGHT lamp');
+  await expect(page.getByText(/You learn/)).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Spells' }).getByRole('button', { name: /Cast Glow/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Spells', exact: true }).click();
+  await page.getByRole('button', { name: /Glow · 1 MP · slot 1/ }).click();
+  await page.getByRole('button', { name: 'Take off the bar' }).click();
+  await expect(page.getByRole('button', { name: 'Slot 1 is empty' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Slot 1 is empty' }).click(); // an empty slot opens the sheet
+  await page.getByRole('button', { name: /^Glow · 1 MP$/ }).click();
+  await page.getByRole('button', { name: 'Put in slot 1' }).click();
+  await expect(page.getByRole('group', { name: 'Spells' }).getByRole('button', { name: /Cast Glow/ })).toBeVisible();
+});

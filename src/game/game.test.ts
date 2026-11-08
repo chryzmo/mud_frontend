@@ -144,3 +144,15 @@ describe('createGameStore', () => {
     expect(game.getState().log).toEqual([]);
   });
 });
+
+describe('the spells frame', () => {
+  it('replaces what the player knows and has readied, and starts empty', () => {
+    expect(initialGameState().spells).toBeNull();
+    const firebolt = { key: 'firebolt', name: 'Firebolt', effect: 'bolt', cost: 3, cooldown: 4, desc: 'Fire.' };
+    const first = reduce(initialGameState(), { type: 'frame', frame: { t: 'spells', known: [firebolt], ready: ['firebolt', '', ''] } });
+    expect(first.spells).toEqual({ known: [firebolt], ready: ['firebolt', '', ''] });
+    expect(first.log).toHaveLength(0); // it draws no line in the log
+    const second = reduce(first, { type: 'frame', frame: { t: 'spells', known: [firebolt], ready: ['', '', 'firebolt'] } });
+    expect(second.spells?.ready).toEqual(['', '', 'firebolt']);
+  });
+});

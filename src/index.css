@@ -533,3 +533,16 @@ input[type="text"] {
 .gm-panel input[type="text"] { min-height: var(--tap); font-size: 16px; }
 .gm-panel button { font-size: 0.9rem; }
 .gm-danger { border-color: var(--danger); color: var(--danger); }
+
+/* The spell bar: three readied spells above the controls. */
+.spellbar { display: flex; gap: 6px; padding: 4px 8px 0; }
+.spell-btn {
+  flex: 1; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit;
+}
+.spell-btn .spell-name { font-weight: bold; font-size: 0.95em; }
+.spell-btn .spell-cost { font-size: 0.8em; color: var(--muted); }
+.spell-btn.spell-dear { opacity: 0.6; }
+.spell-btn.spell-cooling { opacity: 0.5; }
+.spell-btn.spell-empty { color: var(--muted); font-size: 1.4em; }
+.spell-btn:disabled { cursor: default; }
