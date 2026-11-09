@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import App from './App';
 import { FakeSocket, MemoryKV, ThrowingKV } from './net/testSupport';
 import { createSession, Session } from './session';
@@ -298,6 +298,16 @@ describe('playing', () => {
     deliver({ t: 'text', text: 'Also here: \x1b[1;95mMira the Barista\x1b[0m. (TALK to them.)' });
     fireEvent.click(screen.getByRole('button', { name: 'Mira the Barista' }));
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'TALK Mira the Barista' });
+  });
+
+  it('puts About last in the guide, and it opens the About sheet', () => {
+    playing();
+    fireEvent.click(screen.getByRole('button', { name: 'Guide' }));
+    const labels = within(screen.getByRole('dialog', { name: 'Guide' })).getAllByRole('button').map((b) => b.textContent);
+    expect(labels.slice(0, 2)).toEqual(['Journal', 'Hint']);
+    expect(labels[labels.length - 2]).toBe('About'); // the Cancel button follows it
+    fireEvent.click(screen.getByRole('button', { name: 'About' }));
+    expect(screen.getByRole('dialog', { name: 'About ConQuest' })).toBeInTheDocument();
   });
 
   it('keeps Help off the main screen and offers the commands, and the event list, in the guide', () => {

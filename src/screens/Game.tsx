@@ -11,6 +11,7 @@ import QuickActions from '../components/QuickActions';
 import SpellBar from '../components/SpellBar';
 import StyleSheet from '../components/StyleSheet';
 import EventsSheet from '../components/EventsSheet';
+import AboutSheet from '../components/AboutSheet';
 import StatusLine from '../components/StatusLine';
 import StatsBar from '../components/StatsBar';
 import { ConnState } from '../net/connection';
@@ -66,6 +67,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
   const known = state.spells?.known ?? [];
   const ready = state.spells?.ready ?? [];
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [hideGlobal, setHideGlobal] = useState(readHidden);
   const gmName = useRef('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -149,6 +151,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         { label: 'Map', run: () => send('MAP') },
         { label: 'Commands', run: () => send('HELP') },
         ...(somethingOn ? [{ label: 'Events', run: () => setEventsOpen(true) }] : []),
+        { label: 'About', run: () => setAboutOpen(true) },
       ],
     });
   // Ready-made socials: tap one to do it (aim it with WAVE <name> from the input, or from a name's sheet).
@@ -257,6 +260,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
       {gmOpen && <GMPanel initialName={gmName.current} onName={(n) => { gmName.current = n; }} onCommand={send} onClose={() => setGmOpen(false)} />}
       {styleOpen && <StyleSheet cosmetics={state.cosmetics} onCommand={send} onClose={() => setStyleOpen(false)} />}
       {eventsOpen && <EventsSheet schedule={state.events} onClose={() => setEventsOpen(false)} />}
+      {aboutOpen && <AboutSheet onClose={() => setAboutOpen(false)} />}
       {sheet && <ActionSheet title={sheet.title} actions={sheet.actions} onClose={() => setSheet(null)} />}
     </div>
   );
