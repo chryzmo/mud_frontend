@@ -101,4 +101,16 @@ describe('Chatbox', () => {
     render(<Chatbox entries={[{ id: 1, kind: 'italic', text: '(+6 combat XP)' }]} onSelect={() => {}} />);
     expect(screen.getByText('(+6 combat XP)')).toHaveClass('italicText');
   });
+
+  it('draws the quoted words of a SAY, and of your own and a character\'s speech, in their own colours', () => {
+    const entries: Entry[] = [
+      { id: 1, kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' },
+      { id: 2, kind: 'mixed', parts: [{ text: 'You say: ' }, { text: '"yo"', tone: 'speechme' }] },
+      { id: 3, kind: 'mixed', parts: [{ text: '"Welcome."', tone: 'speechnpc' }] },
+    ];
+    render(<Chatbox entries={entries} onSelect={() => {}} />);
+    expect(screen.getByText('"hi"')).toHaveClass('speech-other');
+    expect(screen.getByText('"yo"')).toHaveClass('speech-me');
+    expect(screen.getByText('"Welcome."')).toHaveClass('speech-npc');
+  });
 });

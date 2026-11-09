@@ -19,6 +19,9 @@ const NEAR_BOTTOM_PX = 48;
 // re-render the 500 that were already there.
 export const chatPerf = { rowRenders: 0 };
 
+// The class for each colour a piece of a line can have.
+const TONE_CLASS = { npc: 'npcNameSpan', player: 'playerNameSpan', item: 'itemNameSpan', speechme: 'speech-me', speechnpc: 'speech-npc' } as const;
+
 // One log line. Memoised: entries never change once added, and `onSelect` is stable,
 // so appending a line renders one row, not the whole log.
 // Props that make a log line a real control: reachable by Tab, announced as a button, and
@@ -65,6 +68,7 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
           <div {...tappable(() => onSelect({ kind: 'player', name: e.playerName }))}>
             <NameTag className="playerNameSpan" name={e.playerName} color={e.color} badge={e.badge} />
             <span className="playerActionText">{e.actionText}</span>
+            {e.speech && <span className="speech-other">{e.speech}</span>}
           </div>
         );
       case 'item':
@@ -78,7 +82,7 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         return (
           <div>
             {e.parts.map((part, i) =>
-              part.tone ? <span key={i} className={part.tone + 'NameSpan'}>{part.text}</span> : <span key={i}>{part.text}</span>,
+              part.tone ? <span key={i} className={TONE_CLASS[part.tone]}>{part.text}</span> : <span key={i}>{part.text}</span>,
             )}
           </div>
         );

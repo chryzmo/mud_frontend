@@ -9,9 +9,9 @@ export type EntryBody =
   | { kind: 'spacer' }
   | { kind: 'italic'; text: string } // a line the server wrapped in the italic escape (XP gains)
   | { kind: 'combat'; npcName: string; actionText: string }
-  | { kind: 'player'; playerName: string; actionText: string; color?: string; badge?: string }
+  | { kind: 'player'; playerName: string; actionText: string; speech?: string; color?: string; badge?: string } // speech: the quoted words of a SAY, shown in their own colour
   | { kind: 'item'; itemName: string; actionText: string }
-  | { kind: 'mixed'; parts: { text: string; tone?: 'npc' | 'player' | 'item' }[] } // a line with colour in the middle, or all of it
+  | { kind: 'mixed'; parts: { text: string; tone?: Tone }[] } // a line with colour in the middle, or all of it
   | { kind: 'whisper'; text: string }
   | { kind: 'chat'; who: string; text: string; gm: boolean; color?: string; badge?: string } // global chat
   | { kind: 'announce'; label: string; text: string }
@@ -23,12 +23,16 @@ export type EntryBody =
 // after the oldest lines have been dropped from the front.
 export type Entry = EntryBody & { id: number };
 
-const TONES: Record<string, 'npc' | 'player' | 'item'> = { '31m': 'npc', '34m': 'player', '32m': 'item' };
+// The colour of a piece of a line. npc, player and item are names (red, blue, green); speechme and speechnpc are
+// spoken words (teal for what you said, violet for what a character in the world says).
+export type Tone = 'npc' | 'player' | 'item' | 'speechme' | 'speechnpc';
+
+const TONES: Record<string, Tone> = { '31m': 'npc', '34m': 'player', '32m': 'item', '36m': 'speechme', '35m': 'speechnpc' };
 
 // colourParts splits a line at its colour escapes ("You learn <green>Mend</green>.") into parts. An escape of a
 // colour the client does not use is dropped, its text left plain.
-function colourParts(line: string): { text: string; tone?: 'npc' | 'player' | 'item' }[] {
-  const parts: { text: string; tone?: 'npc' | 'player' | 'item' }[] = [];
+function colourParts(line: string): { text: string; tone?: Tone }[] {
+  const parts: { text: string; tone?: Tone }[] = [];
   const re = /\x1b\[1;(\d+m)([^\x1b]*)\x1b\[0m/g;
   let at = 0;
   for (let m = re.exec(line); m; m = re.exec(line)) {
@@ -63,7 +67,8 @@ export function textLines(text: string): EntryBody[] {
     // middle of a line, or over all of a line of words ("You learn Mend."), is shown as it came.
     const closes = line.indexOf(ESCAPE_END);
     const wholeLine = line.startsWith(ESCAPE_START) && closes === line.length - ESCAPE_END.length && line.slice(0, closes).includes(' ');
-    if (line.includes(ESCAPE_START) && (!line.startsWith(ESCAPE_START) || wholeLine)) {
+    const startsWithName = [RED, BLUE, GREEN].some((c) => line.startsWith(ESCAPE_START + c));
+    if (line.includes(ESCAPE_START) && (!startsWithName || wholeLine)) {
       out.push({ kind: 'mixed', parts: colourParts(line) });
     } else if (line.startsWith(ESCAPE_START + RED)) {
       const { name, rest } = colored(line, RED);
@@ -90,7 +95,7 @@ export function frameLines(frame: ServerFrame): EntryBody[] {
     case 'text':
       return textLines(frame.text);
     case 'say':
-      return [{ kind: 'player', playerName: frame.who, actionText: ` says: "${frame.text}"`, color: frame.color, badge: frame.badge }];
+      return [{ kind: 'player', playerName: frame.who, actionText: ' says: ', speech: `"${frame.text}"`, color: frame.color, badge: frame.badge }];
     case 'arrive':
       return [{
         kind: 'player', playerName: frame.who, color: frame.color, badge: frame.badge,

@@ -94,7 +94,8 @@ scripts/test.sh    # type check + tests + production build
   for the game master only (the `/staff` page; the password stays in memory and a drop signs in again from it).
 - Server to client: `hello`, `auth`, `text`, `say`, `arrive`, `leave`, `whisper`, `stats`, `room`, `inventory`,
   `error`. `src/game/entries.ts` words and styles the events; `text` still carries ANSI colour codes
-  (red = NPC, blue = player, green = item), styled per line by `textLines`; a whole line wrapped in `ESC[3m ... ESC[0m` is
+  (red = NPC, blue = player, green = item; magenta `35m` = words a character in the world speaks, cyan `36m` = words you spoke, drawn
+  violet and teal; other players' SAY is a `say` frame whose quoted words are amber), styled per line by `textLines`; a whole line wrapped in `ESC[3m ... ESC[0m` is
   drawn in italics (the server uses it for XP gains).
 - The connection routes by frame type; nothing is detected by matching server wording.
 
