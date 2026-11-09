@@ -91,6 +91,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
       return spell && spell.effect === effect ? [{ label: `Cast ${spell.name}`, run: () => send(`CAST ${i + 1} ${name}`) }] : [];
     });
   const choose = (t: Target) => {
+    if (t.kind === 'feature') return send(`EXAMINE ${t.name}`); // scenery has one thing to do, so no sheet
     const examine: SheetAction = { label: 'Examine', run: () => send(`EXAMINE ${t.name}`) };
     const actions: SheetAction[] =
       t.kind === 'player' ? [

@@ -274,6 +274,18 @@ describe('playing', () => {
     }
   });
 
+  it('examines scenery tapped in a "You notice" line, and offers Attack on a monster that appears', () => {
+    playing();
+    deliver({ t: 'text', text: `You notice: \x1b[1;33mlong counter\x1b[0m.` });
+    fireEvent.click(screen.getByRole('button', { name: 'long counter' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'EXAMINE long counter' });
+
+    deliver({ t: 'text', text: `\x1b[1;31mPikk\x1b[0m - GOBLIN - appears in the room!` });
+    fireEvent.click(screen.getByText('Pikk'));
+    fireEvent.click(screen.getByRole('button', { name: 'Attack' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'ATTACK Pikk' });
+  });
+
   it('keeps Help off the main screen and offers the commands, and the event list, in the guide', () => {
     playing();
     expect(screen.queryByRole('button', { name: 'Help' })).toBeNull();

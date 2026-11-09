@@ -264,6 +264,7 @@ input[type="text"] {
 .npcNameSpan { color: var(--npc); }
 .playerNameSpan { color: var(--player); }
 .itemNameSpan { color: var(--item); }
+.feature-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .speech-me { color: var(--speech-me); }
 .speech-other { color: var(--speech-other); }
 .speech-npc { color: var(--speech-npc); }

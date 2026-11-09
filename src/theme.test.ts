@@ -27,7 +27,7 @@ const contrast = (a: string, b: string) => {
 // [text token, background token]
 const PAIRS: [string, string][] = [
   ['ink', 'bg'], ['ink', 'panel'], ['ink', 'card'], ['muted', 'bg'], ['muted', 'panel'], ['muted', 'card'],
-  ['accent-ink', 'accent'], ['accent', 'card'],
+  ['accent-ink', 'accent'], ['accent', 'card'], ['accent', 'panel'],
   ['danger', 'danger-bg'], ['note-ink', 'note-bg'], ['warn-ink', 'warn-bg'],
   ['npc', 'panel'], ['player', 'panel'], ['item', 'panel'], ['whisper', 'panel'], ['global', 'panel'], ['warn-ink', 'panel'],
   ...['gold', 'crimson', 'azure', 'emerald', 'violet', 'amber', 'rose', 'silver'].map((c): [string, string] => [`nc-${c}`, 'panel']),

@@ -24,10 +24,11 @@ export type EntryBody =
 export type Entry = EntryBody & { id: number };
 
 // The colour of a piece of a line. npc, player and item are names (red, blue, green); speechme and speechnpc are
-// spoken words (teal for what you said, violet for what a character in the world says).
-export type Tone = 'npc' | 'player' | 'item' | 'speechme' | 'speechnpc';
+// spoken words (teal for what you said, violet for what a character in the world says); feature is a piece of
+// scenery named in a line ("You notice: ..."), which a tap examines.
+export type Tone = 'npc' | 'player' | 'item' | 'speechme' | 'speechnpc' | 'feature';
 
-const TONES: Record<string, Tone> = { '31m': 'npc', '34m': 'player', '32m': 'item', '36m': 'speechme', '35m': 'speechnpc' };
+const TONES: Record<string, Tone> = { '31m': 'npc', '34m': 'player', '32m': 'item', '36m': 'speechme', '35m': 'speechnpc', '33m': 'feature' };
 
 // colourParts splits a line at its colour escapes ("You learn <green>Mend</green>.") into parts. An escape of a
 // colour the client does not use is dropped, its text left plain.
@@ -51,8 +52,13 @@ export function textLines(text: string): EntryBody[] {
   const { ESCAPE_START, ESCAPE_END, RED, BLUE, GREEN } = MUDCOLOR;
   const out: EntryBody[] = [];
 
+  // The name is what the colour covers, so a name of several words ("Grak the Unbroken") is tapped whole; an
+  // unclosed colour falls back to its first word.
   const colored = (line: string, color: string) => {
-    const stripped = line.replace(ESCAPE_START + color, '').replace(ESCAPE_END, '');
+    const open = ESCAPE_START + color;
+    const close = line.indexOf(ESCAPE_END, open.length);
+    if (close > 0) return { name: line.slice(open.length, close), rest: line.slice(close + ESCAPE_END.length) };
+    const stripped = line.replace(open, '');
     const name = stripped.split(' ')[0];
     return { name, rest: stripped.slice(name.length) };
   };

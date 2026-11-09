@@ -71,6 +71,25 @@ describe('textLines with speech colours', () => {
   });
 });
 
+describe('textLines with tappable names', () => {
+  it('reads a monster name of several words, and the line after it, as one tappable name', () => {
+    expect(textLines(`${E}1;31mGrak the Unbroken${E}0m - ORC - appears in the room!`)).toEqual([
+      { kind: 'combat', npcName: 'Grak the Unbroken', actionText: ' - ORC - appears in the room!' },
+    ]);
+    expect(textLines(`${E}1;31mPikk${E}0m - GOBLIN - appears in the room!`)).toEqual([
+      { kind: 'combat', npcName: 'Pikk', actionText: ' - GOBLIN - appears in the room!' },
+    ]);
+  });
+
+  it('marks the scenery named in a "You notice" line', () => {
+    expect(textLines(`You notice: ${E}1;33mfirst clock${E}0m, ${E}1;33msecond clock${E}0m.`)).toEqual([
+      { kind: 'mixed', parts: [
+        { text: 'You notice: ' }, { text: 'first clock', tone: 'feature' }, { text: ', ' }, { text: 'second clock', tone: 'feature' }, { text: '.' },
+      ] },
+    ]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' }]);
