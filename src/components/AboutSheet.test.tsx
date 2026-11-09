@@ -9,7 +9,7 @@ describe('AboutSheet', () => {
     const dialog = screen.getByRole('dialog', { name: 'About ConQuest' });
     expect(dialog).toHaveTextContent('open-source side project');
     expect(dialog).toHaveTextContent('Enjoy exploring!');
-    expect(dialog).not.toHaveTextContent(/secret|AI\b/i); // nothing hints that there is something hidden, or mentions AI
+    expect(dialog).not.toHaveTextContent(/secret|AI\b|MAGFest/i); // nothing hints at something hidden, mentions AI, or names the event
     const server = screen.getByRole('link', { name: 'Game server on GitHub' });
     expect(server).toHaveAttribute('href', REPO_URL);
     const client = screen.getByRole('link', { name: 'Web client on GitHub' });

@@ -5,8 +5,8 @@ Browser client for the MUD, in React + TypeScript, built with Vite. It talks to
 
 ## Current goal and plans
 
-The project is being prepared for a weekend event at MAGFest 2027: guest-only, phone-first play.
-Plans live in `../mud_server/plans/` (start with `magfest-2027.md`). Read the plan before
+The project is being prepared for a weekend live-play event: guest-only, phone-first play.
+Plans live in `../mud_server/plans/` (start with `plans/README.md`, which lists them). Read the plan before
 non-trivial work, and update its checklist and log when work lands.
 
 ## Agent handoff (Pi and Claude Code)

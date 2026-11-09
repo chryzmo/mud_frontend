@@ -15,7 +15,7 @@ const AboutSheet: FC<Props> = ({ onClose }): ReactElement => {
       <div className="sheet about-sheet" ref={sheet} role="dialog" aria-modal="true" aria-label={`About ${NAME}`} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-title">About {NAME}</div>
         <p className="about-text">
-          {NAME} is a text adventure made as a fun, open-source side project for MAGFest 2027. The game server is written in Go
+          {NAME} is a text adventure made as a fun, open-source side project. The game server is written in Go
           and this client is a small React app; both are open source. It is still growing: if something confused you, broke, or
           delighted you, please tell us by opening an issue on GitHub.
         </p>
