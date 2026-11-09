@@ -21,14 +21,15 @@ const ACTIONS: [string, string][] = [
   ['Help', 'HELP'],
 ];
 
-// The commands a player reaches for most, one tap each.
+// The commands a player reaches for most, one tap each. The buttons that open a sheet say so
+// (aria-haspopup); the sheet is a modal dialog, so the button is hidden behind it and needs no expanded state.
 const QuickActions: FC<Props> = ({ onCommand, onHere, onGuide, onChat, onStyle, onSpells }): ReactElement => (
   <div className="quick">
-    {onHere && <button type="button" className="quick-btn" onClick={onHere}>Here</button>}
-    {onGuide && <button type="button" className="quick-btn" onClick={onGuide}>Guide</button>}
-    {onChat && <button type="button" className="quick-btn" onClick={onChat}>Chat</button>}
-    {onSpells && <button type="button" className="quick-btn" onClick={onSpells}>Spells</button>}
-    {onStyle && <button type="button" className="quick-btn" onClick={onStyle}>Style</button>}
+    {onHere && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onHere}>Here</button>}
+    {onGuide && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onGuide}>Guide</button>}
+    {onChat && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onChat}>Chat</button>}
+    {onSpells && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onSpells}>Spells</button>}
+    {onStyle && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onStyle}>Style</button>}
     {ACTIONS.map(([label, line]) => (
       <button key={line} type="button" className="quick-btn" onClick={() => onCommand(line)}>{label}</button>
     ))}
