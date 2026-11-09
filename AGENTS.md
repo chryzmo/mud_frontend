@@ -30,7 +30,7 @@ non-trivial work, and update its checklist and log when work lands.
 - `src/net/`: the new connection layer (no React). `frames.ts` parses and builds frames; `connection.ts` is the session
   state machine (join, resume, recover, reconnect, terminal states, frame counting); `backoff.ts`, `storage.ts`.
   `testdata/transcripts.json` is the server's recorded wire behaviour, replayed by `transcripts.test.ts`.
-- `src/game/`: the game model (no React): `entries.ts` turns frames into log lines (ANSI colour included), `state.ts` is the
+- `src/game/`: the game model (no React): `entries.ts` turns frames into log lines (ANSI colour included, and a whole line in the italic escape `ESC[3m ... ESC[0m` becomes an `italic` entry), `state.ts` is the
   reducer (capped log of 500, room, stats, inventory), `store.ts` joins a connection to it (`send` echoes then sends).
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `leaderboard.html` + `src/leaderboard/` is the leaderboard page (a second Vite entry, no React, served at `/leaderboard.html`): `board.ts` parses `/api/leaderboard` and draws it with `textContent` only, `main.ts` refreshes every 10 s. The stats bar shows level and XP from the `stats` frame.
@@ -94,7 +94,8 @@ scripts/test.sh    # type check + tests + production build
   for the game master only (the `/staff` page; the password stays in memory and a drop signs in again from it).
 - Server to client: `hello`, `auth`, `text`, `say`, `arrive`, `leave`, `whisper`, `stats`, `room`, `inventory`,
   `error`. `src/game/entries.ts` words and styles the events; `text` still carries ANSI colour codes
-  (red = NPC, blue = player, green = item), styled per line by `textLines`.
+  (red = NPC, blue = player, green = item), styled per line by `textLines`; a whole line wrapped in `ESC[3m ... ESC[0m` is
+  drawn in italics (the server uses it for XP gains).
 - The connection routes by frame type; nothing is detected by matching server wording.
 
 The server side is `../mud_server/src/internal/mudserver/protocol.go` (design in
