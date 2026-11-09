@@ -293,6 +293,13 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'ASK Mira the Barista ABOUT map' });
   });
 
+  it('talks to a character tapped in the "Also here" list', () => {
+    playing();
+    deliver({ t: 'text', text: 'Also here: \x1b[1;95mMira the Barista\x1b[0m. (TALK to them.)' });
+    fireEvent.click(screen.getByRole('button', { name: 'Mira the Barista' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'TALK Mira the Barista' });
+  });
+
   it('keeps Help off the main screen and offers the commands, and the event list, in the guide', () => {
     playing();
     expect(screen.queryByRole('button', { name: 'Help' })).toBeNull();

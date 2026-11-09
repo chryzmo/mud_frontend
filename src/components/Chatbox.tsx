@@ -3,7 +3,7 @@ import { Entry } from "../game/entries";
 import NameTag from "./NameTag";
 
 export interface Target {
-  kind: 'player' | 'npc' | 'item' | 'feature' | 'topic';
+  kind: 'player' | 'npc' | 'item' | 'feature' | 'topic' | 'person';
   name: string;
   person?: string; // a topic: who it is to be asked of
 }
@@ -21,7 +21,7 @@ const NEAR_BOTTOM_PX = 48;
 export const chatPerf = { rowRenders: 0 };
 
 // The class for each colour a piece of a line can have.
-const TONE_CLASS = { npc: 'npcNameSpan', player: 'playerNameSpan', item: 'itemNameSpan', speechme: 'speech-me', speechnpc: 'speech-npc', feature: 'feature-link', topic: 'feature-link' } as const;
+const TONE_CLASS = { npc: 'npcNameSpan', player: 'playerNameSpan', item: 'itemNameSpan', speechme: 'speech-me', speechnpc: 'speech-npc', feature: 'feature-link', topic: 'feature-link', person: 'feature-link' } as const;
 
 // personBefore is the character a topic is to be asked of: the nearest red name earlier in the line.
 function personBefore(parts: { text: string; tone?: string }[], at: number): string | undefined {
@@ -89,7 +89,9 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         return (
           <div>
             {e.parts.map((part, i) =>
-              part.tone === 'topic' ? (
+              part.tone === 'person' ? (
+                <span key={i} {...tappable(() => onSelect({ kind: 'person', name: part.text }), TONE_CLASS.person)}>{part.text}</span>
+              ) : part.tone === 'topic' ? (
                 <span key={i} {...tappable(() => onSelect({ kind: 'topic', name: part.text, person: personBefore(e.parts, i) }), TONE_CLASS.topic)}>{part.text}</span>
               ) : part.tone === 'feature' ? (
                 <span key={i} {...tappable(() => onSelect({ kind: 'feature', name: part.text }), TONE_CLASS.feature)}>{part.text}</span>

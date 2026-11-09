@@ -101,6 +101,16 @@ describe('textLines with topics', () => {
   });
 });
 
+describe('textLines with people', () => {
+  it('marks the characters named in an "Also here" line', () => {
+    expect(textLines(`Also here: ${E}1;95mMira the Barista${E}0m, ${E}1;95mMiro the Baker${E}0m. (TALK to them.)`)).toEqual([
+      { kind: 'mixed', parts: [
+        { text: 'Also here: ' }, { text: 'Mira the Barista', tone: 'person' }, { text: ', ' }, { text: 'Miro the Baker', tone: 'person' }, { text: '. (TALK to them.)' },
+      ] },
+    ]);
+  });
+});
+
 describe('textLines with a name colour and badge', () => {
   it('reads the look the server attaches to a name in a list', () => {
     expect(textLines(`${E}1;34mAnn${E}0m\x1b]look;crimson;crown\x07`)).toEqual([

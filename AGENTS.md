@@ -97,6 +97,9 @@ scripts/test.sh    # type check + tests + production build
   (red = NPC, blue = player, green = item; magenta `35m` = words a character in the world speaks, cyan `36m` = words you spoke, drawn
   violet and teal; a player's name in a list may be followed by `ESC]look;<colour>;<badge>BEL`, the name colour and badge to draw it with (either may be empty); other players' SAY is a `say` frame whose quoted words are amber), styled per line by `textLines`; a whole line wrapped in `ESC[3m ... ESC[0m` is
   drawn in italics (the server uses it for XP gains).
+  Tappable text is marked with more codes: yellow `33m` is scenery in a "You notice: ..." line (a tap sends `EXAMINE <name>`), white `37m`
+  is a topic after a character's red name in the same line (`ASK <name> ABOUT <topic>`), and bright magenta `95m` is a character
+  named in the "Also here: ..." list (`TALK <name>`). A monster's name in red at the start of a line is tapped whole (the sheet offers Attack).
 - The connection routes by frame type; nothing is detected by matching server wording.
 
 The server side is `../mud_server/src/internal/mudserver/protocol.go` (design in
