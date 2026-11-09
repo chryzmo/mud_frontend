@@ -55,6 +55,14 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
             <span className="itemActionText">{e.actionText}</span>
           </div>
         );
+      case 'mixed':
+        return (
+          <div>
+            {e.parts.map((part, i) =>
+              part.tone ? <span key={i} className={part.tone + 'NameSpan'}>{part.text}</span> : <span key={i}>{part.text}</span>,
+            )}
+          </div>
+        );
       case 'whisper':
         return <div className="whisperText">{e.text}</div>;
       case 'chat':
