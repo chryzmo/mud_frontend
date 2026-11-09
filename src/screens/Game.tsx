@@ -92,6 +92,7 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
     });
   const choose = (t: Target) => {
     if (t.kind === 'feature') return send(`EXAMINE ${t.name}`); // scenery has one thing to do, so no sheet
+    if (t.kind === 'topic') return t.person ? send(`ASK ${t.person} ABOUT ${t.name}`) : fill('ASK '); // asking is the one thing to do; without a name in the line, start the command
     const examine: SheetAction = { label: 'Examine', run: () => send(`EXAMINE ${t.name}`) };
     const actions: SheetAction[] =
       t.kind === 'player' ? [

@@ -286,6 +286,13 @@ describe('playing', () => {
     expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'ATTACK Pikk' });
   });
 
+  it('asks a character about a topic tapped in the talk hint', () => {
+    playing();
+    deliver({ t: 'text', text: `"Welcome in," says Mira.\n(You could ask \x1b[1;31mMira the Barista\x1b[0m about: \x1b[1;37mcoffee\x1b[0m, \x1b[1;37mmap\x1b[0m.)` });
+    fireEvent.click(screen.getByRole('button', { name: 'map' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'ASK Mira the Barista ABOUT map' });
+  });
+
   it('keeps Help off the main screen and offers the commands, and the event list, in the guide', () => {
     playing();
     expect(screen.queryByRole('button', { name: 'Help' })).toBeNull();

@@ -90,6 +90,17 @@ describe('textLines with tappable names', () => {
   });
 });
 
+describe('textLines with topics', () => {
+  it('marks the topics in a talk hint, after the character they are asked of', () => {
+    expect(textLines(`(You could ask ${E}1;31mMira the Barista${E}0m about: ${E}1;37mcoffee${E}0m, ${E}1;37mmap${E}0m.)`)).toEqual([
+      { kind: 'mixed', parts: [
+        { text: '(You could ask ' }, { text: 'Mira the Barista', tone: 'npc' }, { text: ' about: ' },
+        { text: 'coffee', tone: 'topic' }, { text: ', ' }, { text: 'map', tone: 'topic' }, { text: '.)' },
+      ] },
+    ]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' }]);
