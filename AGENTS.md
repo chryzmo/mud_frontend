@@ -5,8 +5,8 @@ Browser client for the MUD, in React + TypeScript, built with Vite. It talks to
 
 ## Current goal and plans
 
-The project is being prepared for a weekend event at MAGFest 2027: guest-only, phone-first play.
-Plans live in `../mud_server/plans/` (start with `magfest-2027.md`). Read the plan before
+The project is being prepared for a weekend live-play event: guest-only, phone-first play.
+Plans live in `../mud_server/plans/` (start with `plans/README.md`, which lists them). Read the plan before
 non-trivial work, and update its checklist and log when work lands.
 
 ## Agent handoff (Pi and Claude Code)
@@ -35,7 +35,7 @@ non-trivial work, and update its checklist and log when work lands.
 - `src/components/`: `Chatbox`, `InputBar`, `NavButtons`, `StatsBar`, `InventoryModal`, `Header`.
 - `leaderboard.html` + `src/leaderboard/` is the leaderboard page (a second Vite entry, no React, served at `/leaderboard.html`): `board.ts` parses `/api/leaderboard` and draws it with `textContent` only, `main.ts` refreshes every 10 s. The stats bar shows level and XP from the `stats` frame.
 - `src/cosmetics.ts` is the fixed set of name colours and badges a quest or boss can grant (the server's list is in `worldfile/cosmetics.go`); `NameTag` draws a name with them and ignores any key not in the set, and `StyleSheet` (the Style quick action, shown only once a player owns something) picks what to wear. Colours are `--nc-*` tokens in `index.css`, contrast-tested in `theme.test.ts`.
-- `src/game/events.ts` reads the server's `events` frame (what is on now and what is next, as Unix milliseconds) and words it; `EventsSheet` lists them with start times in the player's own zone (`AboutSheet`, the last Guide entry, says what ConQuest is and links to the game server's repository and its new-issue page, `brand.ts`); it opens from the Guide's Events entry, which shows only while an event is on or coming (there is no event line on the main screen, by the owner's choice; `bannerText` is kept for a future occasional notice).
+- `src/game/events.ts` reads the server's `events` frame (what is on now and what is next, as Unix milliseconds) and words it; `EventsSheet` lists them with start times in the player's own zone (`AboutSheet`, the last Guide entry, says what ConQuest is and links to the game server's and the web client's repositories and the server's new-issue page, `brand.ts`); it opens from the Guide's Events entry, which shows only while an event is on or coming (there is no event line on the main screen, by the owner's choice; `bannerText` is kept for a future occasional notice).
 - `SpellBar` is the three readied spells above the controls (shown once the `spells` frame lists a known spell): one tap sends `CAST <slot>`, a button waits out its spell's cooldown on this device (the server holds the real one) and is dimmed when `stats.mp` is short; an empty slot opens the Spells sheet. `Game.tsx` builds that sheet (Spells quick action), adds "Cast <spell>" to a tapped monster (bolts) or player (mends), a Shop action for people whose `verbs` include `SHOP` (it fills the input with `BUY `), and Use and Read on a pack item.
 - `src/utils/constants.ts`: websocket URL (same host, `/ws`; `VITE_WS_URL` overrides) and ANSI color constants.
 - `e2e/`: Playwright tests and their server launcher (see End-to-end tests). `*.test.ts(x)` next to the code they test; Vitest + Testing Library, set up in `src/setupTests.ts`.

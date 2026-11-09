@@ -1,21 +1,27 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import AboutSheet from './AboutSheet';
-import { ISSUES_URL, REPO_URL } from '../brand';
+import { CLIENT_REPO_URL, ISSUES_URL, REPO_URL } from '../brand';
 
 describe('AboutSheet', () => {
-  it('says what ConQuest is and links to the code and to a new issue, in a new tab', () => {
+  it('says what ConQuest is and links to both repositories and to a new issue, in a new tab', () => {
     render(<AboutSheet onClose={() => {}} />);
     const dialog = screen.getByRole('dialog', { name: 'About ConQuest' });
     expect(dialog).toHaveTextContent('open-source side project');
-    const code = screen.getByRole('link', { name: 'View the code on GitHub' });
-    expect(code).toHaveAttribute('href', REPO_URL);
+    expect(dialog).toHaveTextContent('Enjoy exploring!');
+    expect(dialog).not.toHaveTextContent(/secret|AI\b|MAGFest/i); // nothing hints at something hidden, mentions AI, or names the event
+    const server = screen.getByRole('link', { name: 'Game server on GitHub' });
+    expect(server).toHaveAttribute('href', REPO_URL);
+    const client = screen.getByRole('link', { name: 'Web client on GitHub' });
+    expect(client).toHaveAttribute('href', CLIENT_REPO_URL);
     const feedback = screen.getByRole('link', { name: 'Share feedback: open an issue' });
     expect(feedback).toHaveAttribute('href', ISSUES_URL);
-    for (const a of [code, feedback]) {
+    for (const a of [server, client, feedback]) {
       expect(a).toHaveAttribute('target', '_blank');
       expect(a.getAttribute('rel')).toContain('noopener');
     }
+    expect(REPO_URL).toBe('https://github.com/chryzmo/mud_server');
+    expect(CLIENT_REPO_URL).toBe('https://github.com/chryzmo/mud_frontend');
     expect(ISSUES_URL).toBe('https://github.com/chryzmo/mud_server/issues/new');
   });
 
