@@ -124,7 +124,7 @@ test.describe('on a phone', () => {
     expect(overflow).toBeLessThanOrEqual(0);
 
     const vp = page.viewportSize()!;
-    for (const name of ['Look', 'Items', 'Stats', 'Help', 'Guide', 'Chat']) {
+    for (const name of ['Look', 'Items', 'Stats', 'Guide', 'Chat']) {
       const box = (await page.getByRole('button', { name }).boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(vp.width);

@@ -31,11 +31,12 @@ test('scenery and people answer to EXAMINE and TALK', async ({ page }) => {
   await expect(page.getByText('Well met. Mind the step.')).toBeVisible();
 });
 
-test('the banner shows what is on now, and the list shows what is coming', async ({ page }) => {
+test('the Guide lists what is on now and what is coming, with no event line on the main screen', async ({ page }) => {
   await play(page);
-  const bar = page.getByRole('button', { name: /On now: Lantern Walk/ });
-  await expect(bar).toBeVisible();
-  await bar.click();
+  await expect(page.getByRole('button', { name: 'Guide' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /On now: Lantern Walk/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Guide' }).click();
+  await page.getByRole('button', { name: 'Events' }).click();
   const sheet = page.getByRole('dialog', { name: "What's on" });
   await expect(sheet.getByText('On now: Lantern Walk')).toBeVisible();
   await expect(sheet.getByText('Grand Feast')).toBeVisible();

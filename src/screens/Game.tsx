@@ -10,7 +10,6 @@ import NavButtons from '../components/NavButtons';
 import QuickActions from '../components/QuickActions';
 import SpellBar from '../components/SpellBar';
 import StyleSheet from '../components/StyleSheet';
-import EventBar from '../components/EventBar';
 import EventsSheet from '../components/EventsSheet';
 import StatusLine from '../components/StatusLine';
 import StatsBar from '../components/StatsBar';
@@ -135,7 +134,9 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
     ];
     setSheet({ title: 'Here', actions: entries });
   };
-  // Orientation: what you have learned, a hint if you are stuck, and where you have been.
+  // Orientation: what you have learned, a hint if you are stuck, where you have been, what you can type, and
+  // what is on (only while the server has an event to show).
+  const somethingOn = !!state.events && (state.events.now.length > 0 || state.events.next.length > 0);
   const showGuide = () =>
     setSheet({
       title: 'Guide',
@@ -143,6 +144,8 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
         { label: 'Journal', run: () => send('JOURNAL') },
         { label: 'Hint', run: () => send('HINT') },
         { label: 'Map', run: () => send('MAP') },
+        { label: 'Commands', run: () => send('HELP') },
+        ...(somethingOn ? [{ label: 'Events', run: () => setEventsOpen(true) }] : []),
       ],
     });
   // Ready-made socials: tap one to do it (aim it with WAVE <name> from the input, or from a name's sheet).
@@ -221,7 +224,6 @@ const Game: FC<Props> = ({ session, conn }): ReactElement => {
       />
       <StatusLine conn={conn} onRetry={session.conn.retryNow} />
       {state.banner && <Banner id={state.banner.id} label={state.banner.label} text={state.banner.text} onDismiss={dismissBanner} />}
-      <EventBar schedule={state.events} onOpen={() => setEventsOpen(true)} />
       <Chatbox entries={visible} onSelect={choose} />
       <div id="bottombar">
         <StatsBar stats={state.stats} />

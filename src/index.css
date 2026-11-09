@@ -289,19 +289,6 @@ input[type="text"] {
 .banner-text { flex: 1; overflow-wrap: anywhere; }
 .banner-close { min-width: var(--tap); min-height: var(--tap); background: transparent; color: inherit; border: 0; font-size: 1.2rem; }
 
-.eventbar {
-  flex-shrink: 0;
-  display: block;
-  width: 100%;
-  min-height: var(--tap);
-  text-align: left;
-  background: var(--note-bg);
-  color: var(--note-ink);
-  border: 0;
-  border-bottom: 1px solid var(--note-line);
-  padding: 4px var(--gap);
-  font-size: 0.9rem;
-}
 .events-sheet .events-when { color: var(--muted); font-size: 0.9em; }
 
 .statusline {
