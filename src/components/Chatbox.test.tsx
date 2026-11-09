@@ -113,4 +113,29 @@ describe('Chatbox', () => {
     expect(screen.getByText('"yo"')).toHaveClass('speech-me');
     expect(screen.getByText('"Welcome."')).toHaveClass('speech-npc');
   });
+
+  it('lets scenery named in a line be tapped or pressed, to examine it', () => {
+    const onSelect = vi.fn();
+    const entries: Entry[] = [
+      { id: 1, kind: 'mixed', parts: [{ text: 'You notice: ' }, { text: 'long counter', tone: 'feature' }, { text: '.' }] },
+    ];
+    render(<Chatbox entries={entries} onSelect={onSelect} />);
+    const link = screen.getByRole('button', { name: 'long counter' });
+    expect(link).toHaveClass('feature-link');
+    fireEvent.click(link);
+    fireEvent.keyDown(link, { key: 'Enter' });
+    expect(onSelect.mock.calls).toEqual([[{ kind: 'feature', name: 'long counter' }], [{ kind: 'feature', name: 'long counter' }]]);
+  });
+
+  it('lets a topic be tapped, naming the character beside it', () => {
+    const onSelect = vi.fn();
+    const entries: Entry[] = [
+      { id: 1, kind: 'mixed', parts: [
+        { text: '(You could ask ' }, { text: 'Mira', tone: 'npc' }, { text: ' about: ' }, { text: 'coffee', tone: 'topic' }, { text: ', ' }, { text: 'map', tone: 'topic' },
+      ] },
+    ];
+    render(<Chatbox entries={entries} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: 'map' }));
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'topic', name: 'map', person: 'Mira' });
+  });
 });
