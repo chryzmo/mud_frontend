@@ -76,4 +76,24 @@ describe('Chatbox', () => {
     expect(log).toHaveAttribute('aria-live', 'polite');
     expect(log).toHaveAttribute('aria-relevant', 'additions');
   });
+  it('makes names in the log reachable and usable from the keyboard', () => {
+    const onSelect = vi.fn();
+    const entries: Entry[] = [
+      { id: 1, kind: 'player', playerName: 'Bob', actionText: ' waves.' },
+      { id: 2, kind: 'combat', npcName: 'Rat', actionText: ' bites you.' },
+      { id: 3, kind: 'item', itemName: 'Lamp', actionText: ' is here.' },
+    ] as Entry[];
+    render(<Chatbox entries={entries} onSelect={onSelect} />);
+    const bob = screen.getByRole('button', { name: /Bob/ });
+    expect(bob).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(bob, { key: 'Enter' });
+    fireEvent.keyDown(screen.getByRole('button', { name: /Rat/ }), { key: ' ' });
+    fireEvent.click(screen.getByRole('button', { name: /Lamp/ }));
+    fireEvent.keyDown(bob, { key: 'a' }); // other keys do nothing
+    expect(onSelect.mock.calls).toEqual([
+      [{ kind: 'player', name: 'Bob' }],
+      [{ kind: 'npc', name: 'Rat' }],
+      [{ kind: 'item', name: 'Lamp' }],
+    ]);
+  });
 });

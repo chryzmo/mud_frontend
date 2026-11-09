@@ -1,4 +1,4 @@
-import { FC, ReactElement, memo, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { FC, KeyboardEvent, ReactElement, memo, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Entry } from "../game/entries";
 import NameTag from "./NameTag";
 
@@ -21,6 +21,23 @@ export const chatPerf = { rowRenders: 0 };
 
 // One log line. Memoised: entries never change once added, and `onSelect` is stable,
 // so appending a line renders one row, not the whole log.
+// Props that make a log line a real control: reachable by Tab, announced as a button, and
+// activated by Enter or Space as well as a tap.
+function tappable(onActivate: () => void) {
+  return {
+    className: 'chatmessageclickable',
+    role: 'button',
+    tabIndex: 0,
+    onClick: onActivate,
+    onKeyDown: (ev: KeyboardEvent<HTMLDivElement>) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        onActivate();
+      }
+    },
+  };
+}
+
 const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: (t: Target) => void }): ReactElement | null {
   chatPerf.rowRenders++;
   switch (e.kind) {
@@ -36,21 +53,21 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         return <div>&nbsp;</div>;
       case 'combat':
         return (
-          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'npc', name: e.npcName })}>
+          <div {...tappable(() => onSelect({ kind: 'npc', name: e.npcName }))}>
             <span className="npcNameSpan">{e.npcName}</span>
             <span className="npcActionText">{e.actionText}</span>
           </div>
         );
       case 'player':
         return (
-          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'player', name: e.playerName })}>
+          <div {...tappable(() => onSelect({ kind: 'player', name: e.playerName }))}>
             <NameTag className="playerNameSpan" name={e.playerName} color={e.color} badge={e.badge} />
             <span className="playerActionText">{e.actionText}</span>
           </div>
         );
       case 'item':
         return (
-          <div className="chatmessageclickable" onClick={() => onSelect({ kind: 'item', name: e.itemName })}>
+          <div {...tappable(() => onSelect({ kind: 'item', name: e.itemName }))}>
             <span className="itemNameSpan">{e.itemName}</span>
             <span className="itemActionText">{e.actionText}</span>
           </div>
