@@ -31,6 +31,7 @@ const PAIRS: [string, string][] = [
   ['danger', 'danger-bg'], ['note-ink', 'note-bg'], ['warn-ink', 'warn-bg'],
   ['npc', 'panel'], ['player', 'panel'], ['item', 'panel'], ['whisper', 'panel'], ['global', 'panel'], ['warn-ink', 'panel'],
   ...['gold', 'crimson', 'azure', 'emerald', 'violet', 'amber', 'rose', 'silver'].map((c): [string, string] => [`nc-${c}`, 'panel']),
+  ...['speech-me', 'speech-other', 'speech-npc'].map((c): [string, string] => [c, 'panel']),
   ['hp', 'bg'], ['mp', 'bg'], ['boost', 'bg'],
 ];
 

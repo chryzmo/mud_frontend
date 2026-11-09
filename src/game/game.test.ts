@@ -55,9 +55,25 @@ describe('textLines with italics', () => {
   });
 });
 
+describe('textLines with speech colours', () => {
+  it('colours your own words teal and a character\'s words violet, leaving the rest as it came', () => {
+    expect(textLines(`You say: ${E}1;36m"hello"${E}0m`)).toEqual([
+      { kind: 'mixed', parts: [{ text: 'You say: ' }, { text: '"hello"', tone: 'speechme' }] },
+    ]);
+    expect(textLines(`${E}1;35m"Welcome, pilgrim."${E}0m The Gatewarden nods.`)).toEqual([
+      { kind: 'mixed', parts: [{ text: '"Welcome, pilgrim."', tone: 'speechnpc' }, { text: ' The Gatewarden nods.' }] },
+    ]);
+    expect(textLines(`The Gatewarden mutters, ${E}1;35m"Forty thousand and one."${E}0m`)).toMatchObject([{ kind: 'mixed' }]);
+  });
+
+  it('still makes a name at the start of a line tappable', () => {
+    expect(textLines(`${E}1;31mGrak${E}0m attacks you.`)).toEqual([{ kind: 'combat', npcName: 'Grak', actionText: ' attacks you.' }]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
-    expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: "hi"' }]);
+    expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' }]);
     expect(frameLines({ t: 'arrive', who: 'bob', from: 'north' })[0]).toMatchObject({ actionText: ' has entered the room from the north.' });
     expect(frameLines({ t: 'arrive', who: 'bob' })[0]).toMatchObject({ actionText: ' has appeared in the room.' });
     expect(frameLines({ t: 'leave', who: 'bob', to: 'south' })[0]).toMatchObject({ actionText: ' has left to the south.' });
@@ -99,7 +115,7 @@ describe('reduce', () => {
     let s: GameState = initialGameState();
     for (let i = 0; i < MAX_LOG + 25; i++) s = reduce(s, { type: 'frame', frame: say(i) });
     expect(s.log).toHaveLength(MAX_LOG);
-    expect(s.log[0]).toMatchObject({ actionText: ' says: "line 25"' });
+    expect(s.log[0]).toMatchObject({ actionText: ' says: ', speech: '"line 25"' });
     const ids = s.log.map((e) => e.id);
     expect(new Set(ids).size).toBe(MAX_LOG);
     expect([...ids].sort((a, b) => a - b)).toEqual(ids);

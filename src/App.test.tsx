@@ -137,7 +137,8 @@ describe('playing', () => {
     deliver({ t: 'whisper', who: 'bob', text: 'psst', out: false });
     expect(screen.getByText("You are in 'Start Room'")).toBeInTheDocument();
     expect(screen.getByText('12 / 20')).toBeInTheDocument();
-    expect(screen.getByText(/^\s*says: "hello there"$/)).toBeInTheDocument();
+    expect(screen.getByText(/^\s*says:\s*$/)).toBeInTheDocument();
+    expect(screen.getByText('"hello there"')).toHaveClass('speech-other');
     expect(screen.getByText('bob whispers, "psst"')).toHaveClass('whisperText');
 
     fireEvent.click(screen.getByRole('button', { name: /^N/ }));

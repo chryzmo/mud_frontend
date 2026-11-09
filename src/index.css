@@ -38,6 +38,9 @@
   --nc-amber: #8a4a00;
   --nc-rose: #b0245f;
   --nc-silver: #4f5b69;
+  --speech-me: #0a6666;
+  --speech-other: #8a5200;
+  --speech-npc: #6b3fa0;
   --tap: 44px; /* minimum touch target */
   --gap: 8px;
 }
@@ -80,6 +83,9 @@
     --nc-amber: #ffb066;
     --nc-rose: #ff9ec4;
     --nc-silver: #cfd8e3;
+    --speech-me: #6fd6d0;
+    --speech-other: #ffc266;
+    --speech-npc: #c9b0ff;
   }
 }
 
@@ -258,6 +264,9 @@ input[type="text"] {
 .npcNameSpan { color: var(--npc); }
 .playerNameSpan { color: var(--player); }
 .itemNameSpan { color: var(--item); }
+.speech-me { color: var(--speech-me); }
+.speech-other { color: var(--speech-other); }
+.speech-npc { color: var(--speech-npc); }
 .whisperText { color: var(--whisper); }
 .chatText { color: var(--global); }
 .chatWho { font-weight: bold; }
