@@ -10,6 +10,7 @@ export type EntryBody =
   | { kind: 'combat'; npcName: string; actionText: string }
   | { kind: 'player'; playerName: string; actionText: string; color?: string; badge?: string }
   | { kind: 'item'; itemName: string; actionText: string }
+  | { kind: 'mixed'; parts: { text: string; tone?: 'npc' | 'player' | 'item' }[] } // a line with colour in the middle, or all of it
   | { kind: 'whisper'; text: string }
   | { kind: 'chat'; who: string; text: string; gm: boolean; color?: string; badge?: string } // global chat
   | { kind: 'announce'; label: string; text: string }
@@ -20,6 +21,23 @@ export type EntryBody =
 // A log line. `id` is unique and increasing, so it is a stable React key even
 // after the oldest lines have been dropped from the front.
 export type Entry = EntryBody & { id: number };
+
+const TONES: Record<string, 'npc' | 'player' | 'item'> = { '31m': 'npc', '34m': 'player', '32m': 'item' };
+
+// colourParts splits a line at its colour escapes ("You learn <green>Mend</green>.") into parts. An escape of a
+// colour the client does not use is dropped, its text left plain.
+function colourParts(line: string): { text: string; tone?: 'npc' | 'player' | 'item' }[] {
+  const parts: { text: string; tone?: 'npc' | 'player' | 'item' }[] = [];
+  const re = /\x1b\[1;(\d+m)([^\x1b]*)\x1b\[0m/g;
+  let at = 0;
+  for (let m = re.exec(line); m; m = re.exec(line)) {
+    if (m.index > at) parts.push({ text: line.slice(at, m.index) });
+    parts.push({ text: m[2], tone: TONES[m[1]] });
+    at = m.index + m[0].length;
+  }
+  if (at < line.length) parts.push({ text: line.slice(at) });
+  return parts;
+}
 
 // textLines turns a block of game text into entries, one per line.
 export function textLines(text: string): EntryBody[] {
@@ -33,7 +51,13 @@ export function textLines(text: string): EntryBody[] {
   };
 
   for (const line of text.split('\n')) {
-    if (line.startsWith(ESCAPE_START + RED)) {
+    // Colour only at the start, ending at once ("Grak" + " attacks you"), is a tappable name below. Colour in the
+    // middle of a line, or over all of a line of words ("You learn Mend."), is shown as it came.
+    const closes = line.indexOf(ESCAPE_END);
+    const wholeLine = line.startsWith(ESCAPE_START) && closes === line.length - ESCAPE_END.length && line.slice(0, closes).includes(' ');
+    if (line.includes(ESCAPE_START) && (!line.startsWith(ESCAPE_START) || wholeLine)) {
+      out.push({ kind: 'mixed', parts: colourParts(line) });
+    } else if (line.startsWith(ESCAPE_START + RED)) {
       const { name, rest } = colored(line, RED);
       out.push({ kind: 'combat', npcName: name, actionText: rest });
     } else if (line.startsWith(ESCAPE_START + BLUE)) {

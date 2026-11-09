@@ -68,6 +68,7 @@ test('a learned spell appears on the bar and can be taken off and put back from 
   await say(page, 'LIGHT lamp');
   await expect(page.getByText(/You learn/)).toBeVisible();
   await expect(page.getByRole('group', { name: 'Spells' }).getByRole('button', { name: /Cast Glow/ })).toBeVisible();
+  await expect(page.getByRole('log')).not.toContainText('[1;32m'); // colour inside a line is drawn, not shown as the raw escape
 
   await page.getByRole('button', { name: 'Spells', exact: true }).click();
   await page.getByRole('button', { name: /Glow · 1 MP · slot 1/ }).click();

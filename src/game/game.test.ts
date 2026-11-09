@@ -20,6 +20,27 @@ describe('textLines', () => {
   });
 });
 
+describe('textLines with colour inside a line', () => {
+  it('shows colour in the middle of a line instead of the raw escape', () => {
+    expect(textLines(`You learn ${E}1;32mMend${E}0m. It is ready in slot 1.`)).toEqual([
+      { kind: 'mixed', parts: [{ text: 'You learn ' }, { text: 'Mend', tone: 'item' }, { text: '. It is ready in slot 1.' }] },
+    ]);
+    expect(textLines(`You buy ${E}1;32mIRON SWORD${E}0m for 50 gold.`)).toEqual([
+      { kind: 'mixed', parts: [{ text: 'You buy ' }, { text: 'IRON SWORD', tone: 'item' }, { text: ' for 50 gold.' }] },
+    ]);
+  });
+
+  it('shows a line that is coloured from end to end as one coloured piece, not just its first word', () => {
+    expect(textLines(`${E}1;32mA dozen little lights spring up.${E}0m`)).toEqual([
+      { kind: 'mixed', parts: [{ text: 'A dozen little lights spring up.', tone: 'item' }] },
+    ]);
+  });
+
+  it('leaves a name at the start of a line tappable', () => {
+    expect(textLines(`${E}1;32mGOLD${E}0m`)).toEqual([{ kind: 'item', itemName: 'GOLD', actionText: '' }]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: "hi"' }]);
