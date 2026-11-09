@@ -273,6 +273,21 @@ describe('playing', () => {
     }
   });
 
+  it('keeps Help off the main screen and offers the commands, and the event list, in the guide', () => {
+    playing();
+    expect(screen.queryByRole('button', { name: 'Help' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Guide' }));
+    expect(screen.queryByRole('button', { name: 'Events' })).toBeNull(); // nothing on or coming
+    fireEvent.click(screen.getByRole('button', { name: 'Commands' }));
+    expect(sock().sentFrames().pop()).toEqual({ t: 'cmd', line: 'HELP' });
+
+    deliver({ t: 'events', now: [], next: [{ title: 'Quiz', at: Date.now() + 3600000 }] });
+    expect(screen.queryByText(/Quiz/)).toBeNull(); // no line about it on the main screen
+    fireEvent.click(screen.getByRole('button', { name: 'Guide' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Events' }));
+    expect(screen.getByRole('dialog', { name: "What's on" })).toBeInTheDocument();
+  });
+
   it('shows global chat and announcements, and sends /g as GLOBAL', () => {
     playing();
     deliver({ t: 'chat', who: 'Ann', text: 'hello world', ch: 'global' });

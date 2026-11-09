@@ -18,7 +18,6 @@ const ACTIONS: [string, string][] = [
   ['Look', 'LOOK'],
   ['Items', 'INVENTORY'],
   ['Stats', 'STATS'],
-  ['Help', 'HELP'],
 ];
 
 // The commands a player reaches for most, one tap each. The buttons that open a sheet say so
