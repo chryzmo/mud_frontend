@@ -138,4 +138,14 @@ describe('Chatbox', () => {
     fireEvent.click(screen.getByRole('button', { name: 'map' }));
     expect(onSelect).toHaveBeenCalledWith({ kind: 'topic', name: 'map', person: 'Mira' });
   });
+
+  it('lets a character named in a list be tapped, to talk to them', () => {
+    const onSelect = vi.fn();
+    const entries: Entry[] = [
+      { id: 1, kind: 'mixed', parts: [{ text: 'Also here: ' }, { text: 'Mira the Barista', tone: 'person' }, { text: '.' }] },
+    ];
+    render(<Chatbox entries={entries} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Mira the Barista' }));
+    expect(onSelect).toHaveBeenCalledWith({ kind: 'person', name: 'Mira the Barista' });
+  });
 });

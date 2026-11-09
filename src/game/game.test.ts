@@ -101,6 +101,16 @@ describe('textLines with topics', () => {
   });
 });
 
+describe('textLines with people', () => {
+  it('marks the characters named in an "Also here" line', () => {
+    expect(textLines(`Also here: ${E}1;95mMira the Barista${E}0m, ${E}1;95mMiro the Baker${E}0m. (TALK to them.)`)).toEqual([
+      { kind: 'mixed', parts: [
+        { text: 'Also here: ' }, { text: 'Mira the Barista', tone: 'person' }, { text: ', ' }, { text: 'Miro the Baker', tone: 'person' }, { text: '. (TALK to them.)' },
+      ] },
+    ]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' }]);

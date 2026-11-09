@@ -26,10 +26,10 @@ export type Entry = EntryBody & { id: number };
 // The colour of a piece of a line. npc, player and item are names (red, blue, green); speechme and speechnpc are
 // spoken words (teal for what you said, violet for what a character in the world says); feature is a piece of
 // scenery named in a line ("You notice: ..."), which a tap examines; topic is something to ask a character about, which a tap asks (the character is the red name
-// earlier in the same line).
-export type Tone = 'npc' | 'player' | 'item' | 'speechme' | 'speechnpc' | 'feature' | 'topic';
+// earlier in the same line); person is a character named in a list ("Also here: ..."), which a tap talks to.
+export type Tone = 'npc' | 'player' | 'item' | 'speechme' | 'speechnpc' | 'feature' | 'topic' | 'person';
 
-const TONES: Record<string, Tone> = { '31m': 'npc', '34m': 'player', '32m': 'item', '36m': 'speechme', '35m': 'speechnpc', '33m': 'feature', '37m': 'topic' };
+const TONES: Record<string, Tone> = { '31m': 'npc', '34m': 'player', '32m': 'item', '36m': 'speechme', '35m': 'speechnpc', '33m': 'feature', '37m': 'topic', '95m': 'person' };
 
 // colourParts splits a line at its colour escapes ("You learn <green>Mend</green>.") into parts. An escape of a
 // colour the client does not use is dropped, its text left plain.
