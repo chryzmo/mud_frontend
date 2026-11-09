@@ -18,7 +18,9 @@ Every frame is a flat JSON object with a type; `src/net/frames.ts` parses and bu
 protocol is documented in the server's README. The server is the source of truth for names, limits and
 message shapes.
 
-**Status:** guests join with a name, save a recovery code, and resume or reconnect automatically. The mobile
-layout is still being rebuilt (Phase 3); `AGENTS.md` lists what the client must do with the protocol.
+**Status:** playable on a phone: guests join with a name, save a recovery code, and resume or reconnect automatically.
+The game screen has quick actions, a compass, the spell bar, global chat, an event banner and sheets for what is in
+the room, the guide, spells and style; `leaderboard.html` is the leaderboard page. `AGENTS.md` lists what the client
+must do with the protocol.
 
 Run `scripts/install-git-hooks.sh` once per clone to enable the pre-commit hook (secret scan, conflict markers, large files, tests).
