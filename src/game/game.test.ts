@@ -41,6 +41,20 @@ describe('textLines with colour inside a line', () => {
   });
 });
 
+describe('textLines with italics', () => {
+  it('shows a line wrapped in the italic escape as italic text, and the blank line after it as a spacer', () => {
+    expect(textLines('\x1b[3m(+6 combat XP)\x1b[0m\n')).toEqual([
+      { kind: 'italic', text: '(+6 combat XP)' },
+      { kind: 'spacer' },
+    ]);
+  });
+
+  it('leaves a line that only starts with the escape, or mixes it with colour, from showing a raw escape as italic', () => {
+    const [line] = textLines('\x1b[3mItalic \x1b[1;32mgreen\x1b[0m');
+    expect(line.kind).not.toBe('italic');
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: "hi"' }]);

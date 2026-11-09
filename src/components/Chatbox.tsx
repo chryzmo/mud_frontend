@@ -49,6 +49,8 @@ const Row = memo(function Row({ entry: e, onSelect }: { entry: Entry; onSelect: 
         return <div className="noticeText">{e.text}</div>;
       case 'divider':
         return <div className="dividerText">{e.text}</div>;
+      case 'italic':
+        return <div className="italicText">{e.text}</div>;
       case 'spacer':
         return <div>&nbsp;</div>;
       case 'combat':

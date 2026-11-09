@@ -7,6 +7,7 @@ import { MUDCOLOR } from '../utils/constants';
 export type EntryBody =
   | { kind: 'plain'; text: string }
   | { kind: 'spacer' }
+  | { kind: 'italic'; text: string } // a line the server wrapped in the italic escape (XP gains)
   | { kind: 'combat'; npcName: string; actionText: string }
   | { kind: 'player'; playerName: string; actionText: string; color?: string; badge?: string }
   | { kind: 'item'; itemName: string; actionText: string }
@@ -39,6 +40,8 @@ function colourParts(line: string): { text: string; tone?: 'npc' | 'player' | 'i
   return parts;
 }
 
+const ITALIC_START = '\x1b[3m';
+
 // textLines turns a block of game text into entries, one per line.
 export function textLines(text: string): EntryBody[] {
   const { ESCAPE_START, ESCAPE_END, RED, BLUE, GREEN } = MUDCOLOR;
@@ -51,6 +54,11 @@ export function textLines(text: string): EntryBody[] {
   };
 
   for (const line of text.split('\n')) {
+    // A whole line in italics: ESC[3m ... ESC[0m, as the server sends XP gains.
+    if (line.startsWith(ITALIC_START) && line.endsWith(ESCAPE_END) && !line.slice(ITALIC_START.length, -ESCAPE_END.length).includes('\x1b')) {
+      out.push({ kind: 'italic', text: line.slice(ITALIC_START.length, -ESCAPE_END.length) });
+      continue;
+    }
     // Colour only at the start, ending at once ("Grak" + " attacks you"), is a tappable name below. Colour in the
     // middle of a line, or over all of a line of words ("You learn Mend."), is shown as it came.
     const closes = line.indexOf(ESCAPE_END);

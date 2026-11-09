@@ -96,4 +96,9 @@ describe('Chatbox', () => {
       [{ kind: 'item', name: 'Lamp' }],
     ]);
   });
+
+  it('draws an italic entry in italics', () => {
+    render(<Chatbox entries={[{ id: 1, kind: 'italic', text: '(+6 combat XP)' }]} onSelect={() => {}} />);
+    expect(screen.getByText('(+6 combat XP)')).toHaveClass('italicText');
+  });
 });
