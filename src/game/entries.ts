@@ -47,6 +47,8 @@ function colourParts(line: string): { text: string; tone?: Tone }[] {
 }
 
 const ITALIC_START = '\x1b[3m';
+// The name colour and badge a server line attaches to a player's name: ESC ] look ; colour ; badge BEL (each may be empty).
+const LOOK = /^\x1b\]look;([a-z]*);([a-z]*)\x07/;
 
 // textLines turns a block of game text into entries, one per line.
 export function textLines(text: string): EntryBody[] {
@@ -82,7 +84,12 @@ export function textLines(text: string): EntryBody[] {
       out.push({ kind: 'combat', npcName: name, actionText: rest });
     } else if (line.startsWith(ESCAPE_START + BLUE)) {
       const { name, rest } = colored(line, BLUE);
-      out.push({ kind: 'player', playerName: name, actionText: rest });
+      // A name in a list can carry the player's name colour and badge: ESC]look;<colour>;<badge>BEL right after it.
+      const look = LOOK.exec(rest);
+      out.push({
+        kind: 'player', playerName: name, actionText: look ? rest.slice(look[0].length) : rest,
+        ...(look && look[1] ? { color: look[1] } : {}), ...(look && look[2] ? { badge: look[2] } : {}),
+      });
     } else if (line.startsWith(ESCAPE_START + GREEN)) {
       const { name, rest } = colored(line, GREEN);
       out.push({ kind: 'item', itemName: name, actionText: rest });

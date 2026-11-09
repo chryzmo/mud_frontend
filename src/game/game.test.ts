@@ -101,6 +101,21 @@ describe('textLines with topics', () => {
   });
 });
 
+describe('textLines with a name colour and badge', () => {
+  it('reads the look the server attaches to a name in a list', () => {
+    expect(textLines(`${E}1;34mAnn${E}0m\x1b]look;crimson;crown\x07`)).toEqual([
+      { kind: 'player', playerName: 'Ann', actionText: '', color: 'crimson', badge: 'crown' },
+    ]);
+    expect(textLines(`${E}1;34mBo${E}0m\x1b]look;;lantern\x07`)).toEqual([{ kind: 'player', playerName: 'Bo', actionText: '', badge: 'lantern' }]);
+    expect(textLines(`${E}1;34mCy${E}0m\x1b]look;gold;\x07`)).toEqual([{ kind: 'player', playerName: 'Cy', actionText: '', color: 'gold' }]);
+  });
+
+  it('leaves a plain name, and a name with an action, as before', () => {
+    expect(textLines(`${E}1;34mDee${E}0m`)).toEqual([{ kind: 'player', playerName: 'Dee', actionText: '' }]);
+    expect(textLines(`${E}1;34mEd${E}0m waves.`)).toEqual([{ kind: 'player', playerName: 'Ed', actionText: ' waves.' }]);
+  });
+});
+
 describe('frameLines', () => {
   it('words the room events and whispers', () => {
     expect(frameLines({ t: 'say', who: 'bob', text: 'hi' })).toEqual([{ kind: 'player', playerName: 'bob', actionText: ' says: ', speech: '"hi"' }]);
