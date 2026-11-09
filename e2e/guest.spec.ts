@@ -140,3 +140,13 @@ test.describe('on a phone', () => {
     await expect(page.getByText('> STATS')).toBeVisible();
   });
 });
+
+test('pressing Enter sends a command once', async ({ page }) => {
+  const sent: string[] = [];
+  page.on('websocket', (ws) => ws.on('framesent', (f) => sent.push(String(f.payload))));
+  await play(page);
+  const before = sent.filter((p) => p.includes('SAY once only')).length;
+  await say(page, 'SAY once only');
+  await expect(page.getByText('You say: "once only"')).toBeVisible();
+  expect(sent.filter((p) => p.includes('SAY once only')).length - before).toBe(1);
+});
