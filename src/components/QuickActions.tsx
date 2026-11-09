@@ -14,25 +14,29 @@ interface Props {
   onSpells?: () => void;
 }
 
-const ACTIONS: [string, string][] = [
-  ['Look', 'LOOK'],
-  ['Items', 'INVENTORY'],
-  ['Stats', 'STATS'],
-];
-
-// The commands a player reaches for most, one tap each. The buttons that open a sheet say so
-// (aria-haspopup); the sheet is a modal dialog, so the button is hidden behind it and needs no expanded state.
-const QuickActions: FC<Props> = ({ onCommand, onHere, onGuide, onChat, onStyle, onSpells }): ReactElement => (
-  <div className="quick">
-    {onHere && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onHere}>Here</button>}
-    {onGuide && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onGuide}>Guide</button>}
-    {onChat && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onChat}>Chat</button>}
-    {onSpells && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onSpells}>Spells</button>}
-    {onStyle && <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={onStyle}>Style</button>}
-    {ACTIONS.map(([label, line]) => (
-      <button key={line} type="button" className="quick-btn" onClick={() => onCommand(line)}>{label}</button>
-    ))}
-  </div>
-);
+// The buttons, in the order players reach for them: what is here, then looking, the pack, spells, stats, chat, and
+// the guide; the Style sheet last, since only players who earned a name colour or badge have it. Here, Spells and
+// Style show only when there is something behind them. The buttons that open a sheet say so (aria-haspopup); the
+// sheet is a modal dialog, so the button is hidden behind it and needs no expanded state.
+const QuickActions: FC<Props> = ({ onCommand, onHere, onGuide, onChat, onStyle, onSpells }): ReactElement => {
+  const sheet = (label: string, open: () => void) => (
+    <button type="button" className="quick-btn" aria-haspopup="dialog" onClick={open}>{label}</button>
+  );
+  const command = (label: string, line: string) => (
+    <button type="button" className="quick-btn" onClick={() => onCommand(line)}>{label}</button>
+  );
+  return (
+    <div className="quick">
+      {onHere && sheet('Here', onHere)}
+      {command('Look', 'LOOK')}
+      {command('Items', 'INVENTORY')}
+      {onSpells && sheet('Spells', onSpells)}
+      {command('Stats', 'STATS')}
+      {onChat && sheet('Chat', onChat)}
+      {onGuide && sheet('Guide', onGuide)}
+      {onStyle && sheet('Style', onStyle)}
+    </div>
+  );
+};
 
 export default QuickActions;
